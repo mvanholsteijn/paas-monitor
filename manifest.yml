@@ -1,0 +1,13 @@
+applications:
+- name: paas-monitor
+  mem: 128M
+  disk: 256M
+  instances: 2
+  stackato:
+    env:
+      RELEASE: v1
+      GOVERSION:
+        default: 1.2
+    ignores:
+    - .git
+    - bin
