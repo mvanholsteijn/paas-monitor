@@ -1,0 +1,13 @@
+table, td, th
+{
+	border:1px solid green;
+}
+th
+{
+	background-color:red;
+	color:white;
+}
+td 
+{
+	text-align:center;
+}

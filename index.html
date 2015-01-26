@@ -1,0 +1,38 @@
+<!doctype html>
+<html ng-app>
+	<head>
+		<title>Hello Deis !</title>
+		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.16/angular.min.js"></script>
+		<script src="monitor-controller.js"></script>
+		<link rel="stylesheet" type="text/css" href="style.css">
+	</head>
+
+	<body>
+		<div ng-controller="MonitorController">
+		   <table>
+			<tr>
+			    <th>host</th>
+			    <th>release</th>
+			    <th>message</th>
+			    <th># of calls</th>
+			    <th>avg response time</th>
+			    <th>last response time</th>
+			</tr>
+			<tr ng-repeat="response in responses">
+			    <td>{{response.key}}</td>
+			    <td>{{response.release}}</td>
+			    <td>{{response.message}}</td>
+			    <td>{{stats[response.key].count}}</td>
+			    <td>{{stats[response.key].avg}}</td>
+			    <td>{{stats[response.key].last}}</td>
+			</tr>
+                    </table>
+		    <p>
+			Number of errors: {{error_count}}, last status {{last_status}}
+		    </p>
+		    <button type="button" data-ng-click="startMonitor()">start monitor</button>
+		    <button type="button" data-ng-click="stopMonitor()">stop monitor</button>    
+		    <button type="button" data-ng-click="callService()">call service</button>    
+		</div>
+	</body>
+</html>
