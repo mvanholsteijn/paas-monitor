@@ -4,29 +4,14 @@ import (
     "os"
     "fmt"
     "strings"
-    "os/exec"
     "net/http"
     "encoding/json"
 )
 
-var hostName string
-
-
-func determineHostname() {
-    cmd := exec.Command("hostname")
-    stdout, err := cmd.Output()
-
-    if err != nil {
-        println(err.Error())
-        return
-    }
-    hostName = strings.TrimSpace(string(stdout))
-    print(hostName)
-}
-
 func environmentHandler(w http.ResponseWriter, r *http.Request) {
     var variables map[string]string 
     variables = make(map[string]string)
+
     for _, e := range os.Environ() {
         pair := strings.Split(e, "=")
 	variables[pair[0]] = pair[1]
@@ -45,14 +30,14 @@ func environmentHandler(w http.ResponseWriter, r *http.Request) {
 func statusHandler(w http.ResponseWriter, r *http.Request) {
     var variables map[string]string
 
-    
+    hostName, _ := os.Hostname()
     port := os.Getenv("PORT")
     release := os.Getenv("RELEASE")
 
     variables = make(map[string]string)
-    variables["result"] = fmt.Sprintf("%s:%s", hostName, port)
+    variables["key"] = fmt.Sprintf("%s:%s", hostName, port)
     variables["release"] = release
-    variables["message"] = fmt.Sprintf("Hello world from %s", release)
+    variables["message"] = fmt.Sprintf("Hello World from %s", release)
 
     js, err := json.Marshal(variables)
     if err != nil {
@@ -79,6 +64,5 @@ func main() {
 	os.Setenv("PORT", "1337")
     }
 
-    determineHostname()
     http.ListenAndServe(addr, nil)
 }

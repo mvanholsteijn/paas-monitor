@@ -5,7 +5,7 @@ applications:
   instances: 2
   stackato:
     env:
-      RELEASE: v1
+      RELEASE: v2
       GOVERSION:
         default: 1.2
     ignores:
