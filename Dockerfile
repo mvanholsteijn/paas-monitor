@@ -1,7 +1,8 @@
 FROM 		golang
-ADD 		. /go/src/github.com/mvanholsteijn/paas-monitor
+ADD 		public /app/public/
+ADD 		paas-monitor.go /go/src/github.com/mvanholsteijn/paas-monitor/
 RUN 		go install github.com/mvanholsteijn/paas-monitor
-ENTRYPOINT 	/go/bin/paas-monitor
 
-# Document that the service listens on port 1337
+ENV		APPDIR=/app
+ENTRYPOINT 	/go/bin/paas-monitor
 EXPOSE 		1337

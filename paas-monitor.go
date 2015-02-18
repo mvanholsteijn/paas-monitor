@@ -49,7 +49,14 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-    fs := http.FileServer(http.Dir("public"))
+    var dir string
+
+    dir = os.Getenv("APPDIR")
+    if dir == "" {
+	dir = "."
+    } 
+    fs := http.FileServer(http.Dir( dir + "/public"))
+
     http.Handle("/", fs)
     http.HandleFunc("/environment", environmentHandler)
     http.HandleFunc("/status", statusHandler)
