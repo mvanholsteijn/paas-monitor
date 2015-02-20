@@ -37,7 +37,7 @@ function MonitorController($scope, $interval, $http) {
 			    $scope.stats[key].count += 1;
 			    $scope.stats[key].total += responseTime;
 			    $scope.stats[key].last = responseTime;
-			    $scope.stats[key].avg = $scope.stats[key].total / $scope.stats[key].count;
+			    $scope.stats[key].avg = Math.round($scope.stats[key].total / $scope.stats[key].count);
 		    } else {
 			    $scope.stats[key] = { count : 1, last : responseTime, total : responseTime, avg : responseTime };
 			    $scope.responses.push(response) ;
