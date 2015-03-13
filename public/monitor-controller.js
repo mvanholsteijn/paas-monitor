@@ -28,7 +28,7 @@ function MonitorController($scope, $interval, $http) {
 
     $scope.callService = function() {
             var startTime = new Date().getTime();
-	    $http.get('http://' + document.location.host + '/status').
+	    $http.get(document.location.protocol + '//' + document.location.host + '/status').
 		success(function(response) {
 		    var responseTime = new Date().getTime() - startTime;
 		    var key = response.key;
