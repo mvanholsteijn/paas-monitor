@@ -50,10 +50,9 @@ function MonitorController($scope, $interval, $http) {
 			console.log(config);
 			$scope.error_count++;
 			$scope.last_status = "" + status + ", " + data;
-			console.log("error calling " + config.url + ", " + $scope.last_status);
 			if($scope.error_count % 250 == 0) {
 				$scope.stopMonitor();
-				console.log("more than 250 errors, stopped monitoring.");
+				$scope.last_status = ": more than 250 errors, stopped monitoring";
 			}
 		});
    }
