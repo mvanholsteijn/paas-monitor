@@ -57,4 +57,6 @@ function MonitorController($scope, $interval, $http) {
 			}
 		});
    }
+
+   $scope.startMonitor();
 }
