@@ -1,4 +1,4 @@
-package main
+package main // import "github.com/mvanholsteijn/paas-monitor"
 
 import (
     "os"
