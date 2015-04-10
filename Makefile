@@ -6,4 +6,4 @@ clean:
 
 release: paas-monitor
 	docker build -t mvanholsteijn/paas-monitor:latest . 
-	docker push mvanholsteijn/paas-monitor:lastest
+	docker push mvanholsteijn/paas-monitor:latest
