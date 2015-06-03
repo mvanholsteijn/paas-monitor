@@ -42,6 +42,11 @@ function MonitorController($scope, $interval, $http) {
 			    $scope.stats[key] = { count : 1, last : responseTime, total : responseTime, avg : responseTime };
 			    $scope.responses.push(response) ;
 		    }
+
+		    var current = _.find($scope.responses, function(item) {return item.key === response.key});
+
+		    current.message = response.message;
+		    current.release = response.release;
 		}).
 		error(function(data, status, headers, config) {
 			console.log(data);

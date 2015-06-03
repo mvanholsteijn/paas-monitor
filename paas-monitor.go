@@ -27,6 +27,10 @@ func environmentHandler(w http.ResponseWriter, r *http.Request) {
     w.Write(js)
 }
 
+var (
+    count = 0
+)
+
 func statusHandler(w http.ResponseWriter, r *http.Request) {
     var variables map[string]string
 
@@ -34,10 +38,12 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
     port := os.Getenv("PORT")
     release := os.Getenv("RELEASE")
 
+    count = count + 1
+
     variables = make(map[string]string)
     variables["key"] = fmt.Sprintf("%s:%s", hostName, port)
     variables["release"] = release
-    variables["message"] = fmt.Sprintf("Hello World from %s", release)
+    variables["message"] = fmt.Sprintf("Hello World from %s and count is %d", release, count)
 
     js, err := json.Marshal(variables)
     if err != nil {
