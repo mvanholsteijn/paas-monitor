@@ -37,13 +37,18 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
     hostName, _ := os.Hostname()
     port := os.Getenv("PORT")
     release := os.Getenv("RELEASE")
+    message := os.Getenv("MESSAGE")
+    if message == "" {
+       message = "Hello World"
+    }
 
     count = count + 1
 
     variables = make(map[string]string)
     variables["key"] = fmt.Sprintf("%s:%s", hostName, port)
     variables["release"] = release
-    variables["message"] = fmt.Sprintf("Hello World from %s and count is %d", release, count)
+    variables["servercount"] = fmt.Sprintf("%d", count)
+    variables["message"] = fmt.Sprintf("%s from release %s; server call count is %d", release, count)
 
     js, err := json.Marshal(variables)
     if err != nil {
