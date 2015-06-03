@@ -1,6 +1,6 @@
 build: paas-monitor 
 	@[ -z "$$(git status -s)" ] || (echo "outstanding changes" ; git status -s && exit 1)
-	docker build -t mvanholsteijn/paas-monitor:$$(git rev-parse --short HEAD) . 
+	docker build --force-rm=true -t mvanholsteijn/paas-monitor:$$(git rev-parse --short HEAD) . 
 	docker tag  -f mvanholsteijn/paas-monitor:$$(git rev-parse --short HEAD) mvanholsteijn/paas-monitor:latest  
 	@echo mvanholsteijn/paas-monitor:$$(git rev-parse --short HEAD)
 
