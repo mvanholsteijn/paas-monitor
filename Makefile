@@ -1,5 +1,5 @@
 build: paas-monitor envconsul
-	@ [ -z "$$(git status -s)" ] || (echo "outstanding changes" ; git status -s) && exit 1
+	@[ -z "$$(git status -s)" ] || (echo "outstanding changes" ; git status -s && exit 1)
 	docker build -t mvanholsteijn/paas-monitor:$$(git rev-parse --short HEAD) . 
 	docker tag  -f mvanholsteijn/paas-monitor:$$(git rev-parse --short HEAD) mvanholsteijn/paas-monitor:latest  
 
