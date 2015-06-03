@@ -48,7 +48,7 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
     variables["key"] = fmt.Sprintf("%s:%s", hostName, port)
     variables["release"] = release
     variables["servercount"] = fmt.Sprintf("%d", count)
-    variables["message"] = fmt.Sprintf("%s from release %s; server call count is %d", release, count)
+    variables["message"] = fmt.Sprintf("%s from release %s; server call count is %d", message, release, count)
 
     js, err := json.Marshal(variables)
     if err != nil {
