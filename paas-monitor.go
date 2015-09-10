@@ -73,6 +73,11 @@ func main() {
     http.HandleFunc("/status", statusHandler)
 
 
+    if os.Getenv("MESOS_TASK_ID") != "" { 
+        // Mesos sets PORT to the external Port :-) Grrrrr
+	os.Setenv("PORT", "1337")
+    }
+
     var addr string
     port := os.Getenv("PORT")
     if port != "" {
