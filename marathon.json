@@ -1,0 +1,25 @@
+{
+  "id": "paas-monitor",
+  "cpus": 0.25,
+  "mem": 128,
+  "instances": 4,
+  "container": {
+    "type": "DOCKER",
+    "docker": {
+      "image": "mvanholsteijn/paas-monitor:latest",
+      "network": "BRIDGE",
+      "forcePullImage": true,
+      "portMappings": [
+        {
+          "containerPort": 1337,
+          "hostPort": 0,
+          "protocol": "tcp"
+        }
+      ]
+    }
+  },
+  "env": {
+    "RELEASE": "v1",
+    "MESSAGE": "hello from Marathon!"
+  }
+}
