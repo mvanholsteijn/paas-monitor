@@ -2,7 +2,7 @@ REGISTRY_HOST=docker.io
 USERNAME=mvanholsteijn
 NAME=$(shell basename $(PWD))
 
-IMAGE=$(REGISTRY_HOST)$(USERNAME)/$(NAME)
+IMAGE=$(REGISTRY_HOST)/$(USERNAME)/$(NAME)
 
 VERSION=$(shell . .make-release-support ; getVersion)
 TAG=$(shell . .make-release-support; getTag)
