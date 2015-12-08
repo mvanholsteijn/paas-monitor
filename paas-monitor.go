@@ -27,6 +27,17 @@ func environmentHandler(w http.ResponseWriter, r *http.Request) {
     w.Write(js)
 }
 
+func headerHandler(w http.ResponseWriter, r *http.Request) {
+
+    js, err := json.Marshal(r.Header)
+    if err != nil {
+	http.Error(w, err.Error(), http.StatusInternalServerError)
+	return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    w.Write(js)
+}
 var (
     count = 0
 )
@@ -71,6 +82,7 @@ func main() {
     http.Handle("/", fs)
     http.HandleFunc("/environment", environmentHandler)
     http.HandleFunc("/status", statusHandler)
+    http.HandleFunc("/header", headerHandler)
 
 
     if os.Getenv("MESOS_TASK_ID") != "" { 
