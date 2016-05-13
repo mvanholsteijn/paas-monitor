@@ -18,8 +18,20 @@
       ]
     }
   },
+  "healthChecks": [
+    {
+      "path": "/status",
+      "protocol": "HTTP",
+      "portIndex": 0,
+      "gracePeriodSeconds": 300,
+      "intervalSeconds": 60,
+      "timeoutSeconds": 10,
+      "maxConsecutiveFailures": 3,
+      "ignoreHttp1xx": false
+    }
+  ],
   "env": {
-    "RELEASE": "v1",
+    "RELEASE": "v2",
     "MESSAGE": "hello from Marathon!"
   }
 }
