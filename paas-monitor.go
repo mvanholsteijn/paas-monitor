@@ -27,6 +27,11 @@ func environmentHandler(w http.ResponseWriter, r *http.Request) {
     w.Write(js)
 }
 
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+    fmt.Fprintf(w, "ok")
+}
+
 func headerHandler(w http.ResponseWriter, r *http.Request) {
 
     js, err := json.Marshal(r.Header)
@@ -83,6 +88,7 @@ func main() {
     http.HandleFunc("/environment", environmentHandler)
     http.HandleFunc("/status", statusHandler)
     http.HandleFunc("/header", headerHandler)
+    http.HandleFunc("/health", healthHandler)
 
 
     if os.Getenv("MESOS_TASK_ID") != "" { 
