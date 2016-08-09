@@ -32,6 +32,12 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintf(w, "ok")
 }
 
+func stopHandler(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+    fmt.Fprintf(w, "stopped on request")
+    os.Exit(1)
+}
+
 func headerHandler(w http.ResponseWriter, r *http.Request) {
 
     js, err := json.Marshal(r.Header)
@@ -90,6 +96,7 @@ func main() {
     http.HandleFunc("/status", statusHandler)
     http.HandleFunc("/header", headerHandler)
     http.HandleFunc("/health", healthHandler)
+    http.HandleFunc("/stop", stopHandler)
 
 
     if os.Getenv("MESOS_TASK_ID") != "" { 
