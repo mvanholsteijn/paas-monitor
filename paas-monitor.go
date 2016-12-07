@@ -59,7 +59,12 @@ func stopHandler(w http.ResponseWriter, r *http.Request) {
 
 func headerHandler(w http.ResponseWriter, r *http.Request) {
 
-    js, err := json.Marshal(r.Header)
+    hdr := r.Header
+    hdr["Host"] = []string { r.Host }
+    hdr["Content-Type"] = []string { r.Header.Get("Content-Type") }
+    hdr["User-Agent"] = []string { r.UserAgent() }
+
+    js, err := json.Marshal(hdr)
     if err != nil {
 	http.Error(w, err.Error(), http.StatusInternalServerError)
 	return
