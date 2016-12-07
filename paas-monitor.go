@@ -27,6 +27,25 @@ func environmentHandler(w http.ResponseWriter, r *http.Request) {
     w.Write(js)
 }
 
+func requestHandler(w http.ResponseWriter, r *http.Request) {
+
+    var variables map[string]string
+
+    variables = make(map[string]string)
+    variables["method"] = r.Method
+    variables["url"] = r.URL.String()
+    variables["proto"] = r.Proto
+
+    js, err := json.Marshal(variables)
+    if err != nil {
+	http.Error(w, err.Error(), http.StatusInternalServerError)
+	return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    w.Write(js)
+}
+
 func healthHandler(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "text/plain; charset=utf-8")
     fmt.Fprintf(w, "ok")
@@ -96,6 +115,7 @@ func main() {
     http.HandleFunc("/status", statusHandler)
     http.HandleFunc("/header", headerHandler)
     http.HandleFunc("/health", healthHandler)
+    http.HandleFunc("/request", requestHandler)
     http.HandleFunc("/stop", stopHandler)
 
 
