@@ -28,8 +28,8 @@ function MonitorController($scope, $interval, $http) {
 
     $scope.callService = function() {
             var startTime = new Date().getTime();
-	    $http.get(document.location.href.replace(/\/+$/, "") + '/status');
-		success(function(response) {
+	    $http.get(document.location.href.replace(/\/+$/, "") + '/status')
+		.success(function(response) {
 		    var responseTime = new Date().getTime() - startTime;
 		    var key = response.key;
 		    $scope.msg = key;
