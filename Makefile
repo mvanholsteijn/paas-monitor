@@ -6,19 +6,16 @@ NAME=paas-monitor
 IMAGE=$(REGISTRY_HOST)/$(USERNAME)/$(NAME)
 
 
-pre-build: paas-monitor-linux-amd64 marathon-lb.json
+pre-build: paas-monitor marathon-lb.json
 
 post-release: check-release	
 	if [[ -z $(GITHUB_API_TOKEN) ]] ; then echo "ERROR: GITHUB_API_TOKEN not set." ; exit 1 ; fi
 	./release-to-github
 
-paas-monitor-linux-amd64: paas-monitor.go
-	mkdir -p binaries
+paas-monitor: paas-monitor.go
 	docker run --rm \
-	-e BUILD_GOOS="linux" \
-	-e BUILD_GOARCH="amd64" \
 	-v $(PWD):/src \
-	centurylink/golang-builder-cross
+	centurylink/golang-builder
 
 envconsul:
 	curl -L https://github.com/hashicorp/envconsul/releases/download/v0.5.0/envconsul_0.5.0_linux_amd64.tar.gz  | tar --strip-components=1 -xvzf -
