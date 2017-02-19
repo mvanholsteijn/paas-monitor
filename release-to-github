@@ -6,7 +6,11 @@ VERSION=$(sed -n -e 's/^release=//p' .release)
 TAG=$(sed -n -e 's/^tag=//p' .release)
 GIT_RELEASE_INFO=$(mktemp)
 
-trap 'curl -X DELETE  -H "Authorization: token ${GITHUB_API_TOKEN}"  https://api.github.com/repos/mvanholsteijn/paas-monitor/releases/$(jq -r .id $GIT_RELEASE_INFO); rm -f $GIT_RELEASE_INFO; exit 1' ERR 0 15
+[[ -z $VERSION ]] && echo "ERROR: failed to get version from .release" >&2 && exit 1
+[[ -z $TAG ]] && echo "ERROR: failed to get tag from .release" >&2 && exit 1
+[[ -z $GITHUB_API_TOKEN ]] && echo "ERROR: no env GITHUB_API_TOKEN is set" >&2 && exit 1
+
+trap 'echo "ERROR while release to github. cancelling release..."; curl -X DELETE  -H "Authorization: token ${GITHUB_API_TOKEN}"  https://api.github.com/repos/mvanholsteijn/paas-monitor/releases/$(jq -r .id $GIT_RELEASE_INFO); rm -f $GIT_RELEASE_INFO; trap "" ERR 0 15; exit 1' ERR 0 15
 
 jq \
 	--arg tag $TAG \
@@ -23,18 +27,20 @@ jq \
 ID=$(jq -r .id $GIT_RELEASE_INFO)
 curl -s \
 	-d @paas-monitor-linux-amd64 \
+	-o /dev/null \
 	-X POST \
 	-H "Authorization: token ${GITHUB_API_TOKEN}" \
 	-H 'Content-Type: application/octet-stream' \
 	https://uploads.github.com/repos/mvanholsteijn/paas-monitor/releases/$ID/assets?name=paas-monitor-linux-amd64
 
 
-curl -s \
+curl --fail --silent \
 	-d '{"draft": false}'  \
 	-X PATCH \
+	-o /dev/null \
 	-H "Authorization: token ${GITHUB_API_TOKEN}" \
 	-H 'Content-Type: application/json-stream' \
-	https://uploads.github.com/repos/mvanholsteijn/paas-monitor/releases/$ID
+	https://api.github.com/repos/mvanholsteijn/paas-monitor/releases/$ID
 
 trap '' ERR 0 15
 exit 0
