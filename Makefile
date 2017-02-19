@@ -8,6 +8,9 @@ IMAGE=$(REGISTRY_HOST)/$(USERNAME)/$(NAME)
 
 pre-build: paas-monitor-linux-amd64 marathon-lb.json
 
+post-release: check-release	
+	[[ -n $(GITHUB_API_TOKEN) ]] && echo "ERROR: GITHUB_API_TOKEN not set." && exit 1
+	./release-to-github
 
 paas-monitor-linux-amd64: paas-monitor.go
 	mkdir -p binaries

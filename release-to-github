@@ -1,0 +1,40 @@
+#!/bin/bash
+set -e
+set -o pipefail
+
+VERSION=$(sed -n -e 's/^release=//p' .release)
+TAG=$(sed -n -e 's/^tag=//p' .release)
+GIT_RELEASE_INFO=$(mktemp)
+
+trap 'curl -X DELETE  -H "Authorization: token ${GITHUB_API_TOKEN}"  https://api.github.com/repos/mvanholsteijn/paas-monitor/releases/$(jq -r .id $GIT_RELEASE_INFO); rm -f $GIT_RELEASE_INFO; exit 1' ERR 0 15
+
+jq \
+	--arg tag $TAG \
+	--arg release $VERSION \
+	'. + { "tag_name": $tag, "name": $release, "body": ("release " + $release) }' \
+	<<< '{ "target_commitish": "master", "draft": true, "prerelease": false }' | \
+	curl -s \
+		-d @- \
+		-o $GIT_RELEASE_INFO \
+		-H "Authorization: token ${GITHUB_API_TOKEN}" \
+		-H 'Content-Type: application/json' \
+		https://api.github.com/repos/mvanholsteijn/paas-monitor/releases 
+
+ID=$(jq -r .id $GIT_RELEASE_INFO)
+curl -s \
+	-d @paas-monitor-linux-amd64 \
+	-X POST \
+	-H "Authorization: token ${GITHUB_API_TOKEN}" \
+	-H 'Content-Type: application/octet-stream' \
+	https://uploads.github.com/repos/mvanholsteijn/paas-monitor/releases/$ID/assets?name=paas-monitor-linux-amd64
+
+
+curl -s \
+	-d '{"draft": false}'  \
+	-X PATCH \
+	-H "Authorization: token ${GITHUB_API_TOKEN}" \
+	-H 'Content-Type: application/json-stream' \
+	https://uploads.github.com/repos/mvanholsteijn/paas-monitor/releases/$ID
+
+trap '' ERR 0 15
+exit 0
