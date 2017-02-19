@@ -23,5 +23,6 @@ envconsul:
 marathon-lb.json: marathon.json
 	jq '. + { "labels": {"HAPROXY_GROUP":"external", "HAPROXY_0_VHOST":"paas-monitor.127.0.0.1.xip.io"}}' marathon.json > marathon-lb.json
 
+
 clean:
 	rm -rf paas-monitor envconsul

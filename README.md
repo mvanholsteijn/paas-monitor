@@ -14,18 +14,43 @@ It can be used to see  how the PaaS platform handles:
 to run the application, type one of:
 
 ```
-# native 
+# Native 
 go run paas-monitor.go &
 open http://0.0.0.0:1337
 
-# docker
+# Docker
 docker run -d -p 1337:1337 mvanholsteijn/paas-monitor:latest
 open http://0.0.0.0:1337
 
-# marathon
+# in Docker container via Marathon
+curl -X POST -d @marathon-docker.json http://localhost:8888/v2/apps
+
+# Marathon 
 curl -X POST -d @marathon.json http://localhost:8888/v2/apps
 ```
 
+## Running in a PaaS
+
+When you are deploying your application in a PaaS, like CloudFoundry or Marathon the platform
+will pass in the port to listen on via an environment variable. using the option `-port-env-name`
+you can specify the name of that environment variable. The following table shows possible
+port environment variable names per platform.
+
+
+| Platform | name |
+| -------- | -----|
+| Marathon | PORT0 or PORT_1337 |
+| CloudFoundry | PORT |
+
+So on Marathon, you would start the paas-monitor by specifying:
+
+```json
+{
+  ...
+  "cmd": "paas-monitor -port-env-name PORT0"
+  ...
+}
+```
 
 ## Application endpoints
 The application has the following endpoints:
