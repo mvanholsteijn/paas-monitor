@@ -8,7 +8,7 @@
     "docker": {
       "image": "mvanholsteijn/paas-monitor:latest",
       "network": "BRIDGE",
-      "forcePullImage": true,
+      "forcePullImage": false,
       "portMappings": [
         {
           "containerPort": 1337,

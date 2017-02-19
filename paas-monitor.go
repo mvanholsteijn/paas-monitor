@@ -2,11 +2,15 @@ package main // import "github.com/mvanholsteijn/paas-monitor"
 
 import (
     "os"
+    "flag"
     "fmt"
     "strings"
     "net/http"
     "encoding/json"
+    "log"
 )
+
+var port string 
 
 func environmentHandler(w http.ResponseWriter, r *http.Request) {
     var variables map[string]string 
@@ -81,7 +85,6 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
     var variables map[string]string
 
     hostName, _ := os.Hostname()
-    port := os.Getenv("PORT")
     release := os.Getenv("RELEASE")
     message := os.Getenv("MESSAGE")
     if message == "" {
@@ -124,19 +127,18 @@ func main() {
     http.HandleFunc("/stop", stopHandler)
 
 
-    if os.Getenv("MESOS_TASK_ID") != "" { 
-        // Mesos sets PORT to the external Port :-) Grrrrr
-	os.Setenv("PORT", "1337")
-    }
+    portEnvName := flag.String("port-env-name", "", "the environment variable name overriding the listen port")
+    flag.Parse()
 
-    var addr string
-    port := os.Getenv("PORT")
-    if port != "" {
-	addr = ":" + port
+    if *portEnvName != "" && os.Getenv(*portEnvName) != "" {
+	port = os.Getenv(*portEnvName)
     } else {
-	addr = ":1337"
-	os.Setenv("PORT", "1337")
+	if *portEnvName != "" {
+		log.Fatalf("environment variable '%s' is not set with a port override\n", *portEnvName)
+	}
+	port = "1337"
     }
 
-    http.ListenAndServe(addr, nil)
+    log.Printf("listening on port %s\n", port)
+    http.ListenAndServe(":" + port, nil)
 }
