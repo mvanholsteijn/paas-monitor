@@ -1,23 +1,9 @@
 {
   "id": "paas-monitor",
   "cpus": 0.25,
+  "cmd": "paas-monitor -port-env-name PORT0",
   "mem": 128,
-  "instances": 4,
-  "container": {
-    "type": "DOCKER",
-    "docker": {
-      "image": "mvanholsteijn/paas-monitor:latest",
-      "network": "BRIDGE",
-      "forcePullImage": false,
-      "portMappings": [
-        {
-          "containerPort": 1337,
-          "hostPort": 0,
-          "protocol": "tcp"
-        }
-      ]
-    }
-  },
+  "instances": 1,
   "healthChecks": [
     {
       "path": "/health",
