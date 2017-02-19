@@ -31,7 +31,7 @@ curl -X POST -d @marathon.json http://localhost:8888/v2/apps
 The application has the following endpoints:
 
 | URI | description |
-+ --- + ------------+
+| --- | ------------|
 | /		| services the web UI|
 | /status	| called by the web UI, returning hostname,message, release and server count|
 | /environment	| returns the environment variables of the server process|
