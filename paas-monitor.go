@@ -128,17 +128,30 @@ func main() {
 
 
     portEnvName := flag.String("port-env-name", "", "the environment variable name overriding the listen port")
+    portSpecified := flag.String("port", "", "the port to listen, override the environment name")
     flag.Parse()
 
-    if *portEnvName != "" && os.Getenv(*portEnvName) != "" {
-	port = os.Getenv(*portEnvName)
+    if *portSpecified != "" && *portEnvName != "" {
+	log.Fatalf("specify either -port or -port-env-name, but not both.\n")
+    }
+
+    if *portSpecified != "" {
+       port = *portSpecified
     } else {
-	if *portEnvName != "" {
-		log.Fatalf("environment variable '%s' is not set with a port override\n", *portEnvName)
+	if *portEnvName != "" && os.Getenv(*portEnvName) != "" {
+	    port = os.Getenv(*portEnvName)
+	} else {
+	    if *portEnvName != "" {
+		    log.Fatalf("environment variable '%s' is not set with a port override\n", *portEnvName)
+	    }
+	    port = os.Getenv("PORT")
+            if port == "" {
+		port = "1337"
+            }
 	}
-	port = "1337"
     }
 
     log.Printf("listening on port %s\n", port)
-    http.ListenAndServe(":" + port, nil)
+    err := http.ListenAndServe(":" + port, nil)
+    log.Printf("%s", err)
 }

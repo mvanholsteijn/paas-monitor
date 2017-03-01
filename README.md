@@ -40,9 +40,11 @@ port environment variable names per platform.
 | Platform | name |
 | -------- | -----|
 | Marathon | PORT0 or PORT_1337 |
-| CloudFoundry | PORT |
 
-So on Marathon, you would start the paas-monitor by specifying:
+if no environment name is specified and the environment variable PORT is set, it will override
+the default port of 1337.
+
+On Marathon, you would start the paas-monitor by specifying:
 
 ```json
 {
