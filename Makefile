@@ -13,10 +13,10 @@ post-release: check-release push-to-gcr
 	./release-to-github
 
 push-to-gcr:
-	docker tag  gcr.io/instruqt/$(NAME):$(VERSION) $(IMAGE):$(VERSION)
-	docker tag  gcr.io/instruqt/$(NAME):latest $(IMAGE):$(VERSION)
-	gcloud docker -- push gcr.io/instruqt/$(NAME):$(VERSION)
-	gcloud docker -- push gcr.io/instruqt/$(NAME):latest
+	docker tag $(IMAGE):$(VERSION) gcr.io/instruqt/$(NAME):$(VERSION)
+	docker tag $(IMAGE):$(VERSION) gcr.io/instruqt/$(NAME):latest
+	gcloud docker --project instruqt -- push gcr.io/instruqt/$(NAME):$(VERSION)
+	gcloud docker --project instruqt -- push gcr.io/instruqt/$(NAME):latest
 
 paas-monitor: paas-monitor.go
 	docker run --rm \
