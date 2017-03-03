@@ -8,13 +8,15 @@ IMAGE=$(REGISTRY_HOST)/$(USERNAME)/$(NAME)
 
 pre-build: paas-monitor marathon-lb.json
 
-post-release: check-release	
-	docker tag  gcr.io/instruqt/$(NAME):$(VERSION) $(IMAGE):$(VERSION)
-	docker tag  gcr.io/instruqt/$(NAME):latest $(IMAGE):$(VERSION)
-	docker push gcr.io/instruqt/$(NAME):$(VERSION)
-	docker push gcr.io/instruqt/$(NAME):latest
+post-release: check-release push-to-gcr
 	if [[ -z $(GITHUB_API_TOKEN) ]] ; then echo "ERROR: GITHUB_API_TOKEN not set." ; exit 1 ; fi
 	./release-to-github
+
+push-to-gcr:
+	docker tag  gcr.io/instruqt/$(NAME):$(VERSION) $(IMAGE):$(VERSION)
+	docker tag  gcr.io/instruqt/$(NAME):latest $(IMAGE):$(VERSION)
+	gcloud docker -- push gcr.io/instruqt/$(NAME):$(VERSION)
+	gcloud docker -- push gcr.io/instruqt/$(NAME):latest
 
 paas-monitor: paas-monitor.go
 	docker run --rm \
