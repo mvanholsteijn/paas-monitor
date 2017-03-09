@@ -153,5 +153,5 @@ func main() {
 
     log.Printf("listening on port %s\n", port)
     err := http.ListenAndServe(":" + port, nil)
-    log.Printf("%s", err)
+    log.Fatal("%s", err)
 }
