@@ -9,4 +9,4 @@ ENV		SERVICE_TAGS http
 
 ENTRYPOINT 	[ "/paas-monitor", "-port", "1337" ]
 EXPOSE 		1337
-HEALTHCHECK	--start-period=3s --interval=30s --timeout=3s CMD /paas-monitor -check -port 1337
+HEALTHCHECK	--start-period=3s --interval=30s --timeout=3s CMD  ["/paas-monitor", "-check"]
