@@ -62,5 +62,31 @@ function MonitorController($scope, $interval, $http) {
 		});
    }
 
+   $scope.stopService = function() {
+	    $http.get(document.location.href.replace(/\/+$/, "") + '/stop')
+		.success(function(response) {
+			console.log('a service was stopped');
+		}).
+		error(function(data, status, headers, config) {
+			console.log(data);
+			console.log(status);
+			console.log(headers);
+			console.log(config);
+		});
+   }
+
+   $scope.toggleHealth = function() {
+	    $http.get(document.location.href.replace(/\/+$/, "") + '/toggle-health')
+		.success(function(response) {
+			console.log('a service was made unhealthy');
+		}).
+		error(function(data, status, headers, config) {
+			console.log(data);
+			console.log(status);
+			console.log(headers);
+			console.log(config);
+		});
+   }
+
    $scope.startMonitor();
 }
