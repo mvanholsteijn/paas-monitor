@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"hash/crc32"
 )
 
 var port string
@@ -28,7 +29,18 @@ func environmentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	etag := fmt.Sprintf("%x", crc32.ChecksumIEEE(js))
+
+	if match := r.Header.Get("If-None-Match"); match != "" {
+		if strings.Contains(match, etag) {
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "public, max-age=60")
+	w.Header().Set("ETag", etag)
 	w.Write(js)
 }
 
