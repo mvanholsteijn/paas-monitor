@@ -81,7 +81,12 @@ func toggleHealthHandler(w http.ResponseWriter, r *http.Request) {
 
 func stopHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	fmt.Fprintf(w, "stopped on request")
+	w.Header().Set("Content-Length", "0");
+	if f, ok := w.(http.Flusher); ok {
+		f.Flush()
+	} else {
+		log.Println("Damn, no flush");
+	}
 	os.Exit(1)
 }
 
