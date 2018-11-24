@@ -49,9 +49,12 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 	var variables map[string]string
 
 	variables = make(map[string]string)
-	variables["method"] = r.Method
 	variables["url"] = r.URL.String()
 	variables["proto"] = r.Proto
+	variables["host"] = r.Host
+	variables["method"] = r.Method
+	variables["request-uri"] = r.RequestURI
+	variables["remote-addr"] = r.RemoteAddr
 
 	js, err := json.Marshal(variables)
 	if err != nil {

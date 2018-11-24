@@ -1,0 +1,128 @@
+swagger: "2.0"
+info:
+  description: >
+    The paas-monitor is an application which can be used to observe 
+    the behaviour of PaaS platforms in the face of updates and errors.
+  version: "1.0.0"
+  title: "paas monitor"
+  contact:
+    email: "mark@binx.io"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+paths:
+  /environment:
+    get:
+      summary: server environment variables
+      operationId: getEnvironment
+      produces:
+      - application/json
+      responses:
+        200:
+          description: ok
+          schema:
+            type: object
+  /status:
+    get:
+      summary: server state information
+      operationId: getStatus
+      produces:
+      - application/json
+      responses:
+        200:
+          description: ok
+          schema:
+            type: object
+            properties:
+              key:
+                description: host and port of the responding server
+                type: string
+              message:
+                description: value of $MESSAGE env variable of the server
+                type: string
+              release:
+                description: value of $RELEASE env variable of this server
+                type: string
+              servercount:
+                description: number of times the server has been called
+                type: integer
+
+  /health:
+    get:
+      summary: check
+      operationId: getHealth
+      produces:
+      - plain/text
+      responses:
+        200:
+          description: ok
+          schema:
+            type: string
+        500:
+          description: ok
+          schema:
+            type: string
+            description: server toggled to return unhealthy
+
+  /toggle-health:
+    get:
+      summary: toggle the servers' health state
+      operationId: toggleHealth
+      produces:
+      - plain/text
+      responses:
+        200:
+          description: ok
+          schema:
+            type: string
+  /stop:
+    get:
+      summary: stops the server
+      operationId: stop
+      produces:
+      - plain/text
+      responses:
+        200:
+          description: ok
+          schema:
+            description: empty string
+            type: string
+  /header:
+    get:
+      summary: returns all the http request headers
+      operationId: getHeaders
+      produces:
+      - application/json
+      responses:
+        200:
+          description: ok
+          schema:
+            type: object
+  /request:
+    get:
+      summary: as understood by the HTTP server
+      operationId: getRequest
+      produces:
+      - application/json
+      responses:
+        200:
+          description: ok
+          schema:
+            type: object
+            properties:
+              proto:
+                type: string
+              host:
+                type: string
+              url:
+                type: string
+              method:
+                type: string
+              request-uri:
+                type: string
+              request-addr:
+                type: string
+
+externalDocs:
+  description: "Checkout the source code"
+  url: "https://github.com/mvanholsteijn/paas-monitor"
