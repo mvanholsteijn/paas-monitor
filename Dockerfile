@@ -7,6 +7,8 @@ RUN		curl -sS -L https://releases.hashicorp.com/envconsul/0.7.2/envconsul_0.7.2_
 			tar -xvzf -
 
 FROM 		scratch
+ARG		VERSION
+
 ADD 		public /app/public/
 COPY --from=0		/paas-monitor /
 COPY --from=0		/envconsul /
@@ -14,6 +16,7 @@ ENV		APPDIR /app
 
 ENV		SERVICE_NAME paas-monitor
 ENV		SERVICE_TAGS http
+ENV		VERSION=${VERSION}
 
 ENTRYPOINT 	[ "/paas-monitor", "-port", "1337" ]
 EXPOSE 		1337

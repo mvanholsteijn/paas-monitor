@@ -37,7 +37,7 @@ post-build:
 
 
 docker-build: .release
-	docker build -t $(IMAGE):$(VERSION) .
+	docker build --build-arg VERSION=$(VERSION) -t $(IMAGE):$(VERSION) .
 	docker tag  $(IMAGE):$(VERSION) $(IMAGE):latest
 
 .release:
