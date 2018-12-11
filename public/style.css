@@ -1,10 +1,14 @@
+body {
+   font-family: ubuntu;
+}
+
 table, td, th
 {
 	border:1px solid green;
 }
 th
 {
-	background-color: #6B205F;
+	background-color: #DD4235;
 	color:white;
 }
 td 
