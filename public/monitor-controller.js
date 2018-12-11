@@ -35,11 +35,12 @@ function MonitorController($scope, $interval, $http) {
 		    $scope.msg = key;
 		    if($scope.stats.hasOwnProperty(key)) {
 			    $scope.stats[key].count += 1;
+			    $scope.stats[key].servercount = response.servercount;
 			    $scope.stats[key].total += responseTime;
 			    $scope.stats[key].last = responseTime;
 			    $scope.stats[key].avg = Math.round($scope.stats[key].total / $scope.stats[key].count);
 		    } else {
-			    $scope.stats[key] = { count : 1, last : responseTime, total : responseTime, avg : responseTime };
+			    $scope.stats[key] = { count : 1, servercount: response.servercount, last : responseTime, total : responseTime, avg : responseTime };
 			    $scope.responses.push(response) ;
 		    }
 
@@ -47,6 +48,7 @@ function MonitorController($scope, $interval, $http) {
 
 		    current.message = response.message;
 		    current.release = response.release;
+		    current.servercount = response.servercount;
 		}).
 		error(function(data, status, headers, config) {
 			console.log(data);
