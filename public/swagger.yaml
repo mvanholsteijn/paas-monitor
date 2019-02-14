@@ -75,6 +75,28 @@ paths:
           description: ok
           schema:
             type: string
+  /increase-cpu:
+    get:
+      summary: increase cpu utilization
+      operationId: increaseCpu
+      produces:
+      - plain/text
+      responses:
+        200:
+          description: ok
+          schema:
+            type: string
+  /decrease-cpu:
+    get:
+      summary: decrease cpu utilization
+      operationId: increaseCpu
+      produces:
+      - plain/text
+      responses:
+        200:
+          description: ok
+          schema:
+            type: string
   /stop:
     get:
       summary: stops the server

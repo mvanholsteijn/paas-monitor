@@ -77,6 +77,34 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+var quitLoad = make(chan bool, 1)
+
+func burnCPU() {
+    for {
+	select {
+	case <-quitLoad:
+	    return
+	default:
+	}
+    }
+}
+
+func increaseCpuLoadHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	go burnCPU()
+	fmt.Fprintf(w, "CPU load increased\n")
+}
+
+func decreaseCpuLoadHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	select {
+	    case quitLoad <- true:
+		fmt.Fprintf(w, "CPU load decreased\n")
+	    default:
+		fmt.Fprintf(w, "no additional CPU load decreased\n")
+	}
+}
+
 func toggleHealthHandler(w http.ResponseWriter, r *http.Request) {
 	healthy = !healthy
 	fmt.Fprintf(w, "toggled health to %v", healthy)
@@ -161,6 +189,8 @@ func main() {
 	http.HandleFunc("/toggle-health", toggleHealthHandler)
 	http.HandleFunc("/request", requestHandler)
 	http.HandleFunc("/stop", stopHandler)
+	http.HandleFunc("/increase-cpu", increaseCpuLoadHandler)
+	http.HandleFunc("/decrease-cpu", decreaseCpuLoadHandler)
 
 	portEnvName := flag.String("port-env-name", "", "the environment variable name overriding the listen port")
 	portSpecified := flag.String("port", "", "the port to listen, override the environment name")
