@@ -49,6 +49,7 @@ function MonitorController($scope, $interval, $http) {
 		    current.message = response.message;
 		    current.release = response.release;
 		    current.servercount = response.servercount;
+		    current.cpu = response.cpu;
 		}).
 		error(function(data, status, headers, config) {
 			console.log(data);
@@ -68,6 +69,32 @@ function MonitorController($scope, $interval, $http) {
 	    $http.get(document.location.href.replace(/\/+$/, "") + '/stop')
 		.success(function(response) {
 			console.log('a service was stopped');
+		}).
+		error(function(data, status, headers, config) {
+			console.log(data);
+			console.log(status);
+			console.log(headers);
+			console.log(config);
+		});
+   }
+
+   $scope.increaseCpu = function() {
+	    $http.get(document.location.href.replace(/\/+$/, "") + '/increase-cpu')
+		.success(function(response) {
+			console.log('/increase-cpu was called');
+		}).
+		error(function(data, status, headers, config) {
+			console.log(data);
+			console.log(status);
+			console.log(headers);
+			console.log(config);
+		});
+   }
+
+   $scope.decreaseCpu = function() {
+	    $http.get(document.location.href.replace(/\/+$/, "") + '/decrease-cpu')
+		.success(function(response) {
+			console.log('/decrease-cpu was called');
 		}).
 		error(function(data, status, headers, config) {
 			console.log(data);

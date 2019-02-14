@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/shirou/gopsutil/cpu"
+	"hash/crc32"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strings"
-	"hash/crc32"
 )
 
 var port string
@@ -80,13 +81,13 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 var quitLoad = make(chan bool, 1)
 
 func burnCPU() {
-    for {
-	select {
-	case <-quitLoad:
-	    return
-	default:
+	for {
+		select {
+		case <-quitLoad:
+			return
+		default:
+		}
 	}
-    }
 }
 
 func increaseCpuLoadHandler(w http.ResponseWriter, r *http.Request) {
@@ -98,9 +99,9 @@ func increaseCpuLoadHandler(w http.ResponseWriter, r *http.Request) {
 func decreaseCpuLoadHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	select {
-	    case quitLoad <- true:
+	case quitLoad <- true:
 		fmt.Fprintf(w, "CPU load decreased\n")
-	    default:
+	default:
 		fmt.Fprintf(w, "no additional CPU load decreased\n")
 	}
 }
@@ -112,11 +113,11 @@ func toggleHealthHandler(w http.ResponseWriter, r *http.Request) {
 
 func stopHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.Header().Set("Content-Length", "0");
+	w.Header().Set("Content-Length", "0")
 	if f, ok := w.(http.Flusher); ok {
 		f.Flush()
 	} else {
-		log.Println("Damn, no flush");
+		log.Println("Damn, no flush")
 	}
 	os.Exit(1)
 }
@@ -143,7 +144,7 @@ var (
 )
 
 func statusHandler(w http.ResponseWriter, r *http.Request) {
-	var variables map[string]string
+	variables := make(map[string]interface{})
 
 	hostName, _ := os.Hostname()
 	release := os.Getenv("RELEASE")
@@ -151,16 +152,24 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 	if message == "" {
 		message = "Hello World"
 	} else {
-                message = os.ExpandEnv(message)
-        }
-
+		message = os.ExpandEnv(message)
+	}
 	count = count + 1
 
-	variables = make(map[string]string)
 	variables["key"] = fmt.Sprintf("%s:%s", hostName, port)
 	variables["release"] = release
 	variables["servercount"] = fmt.Sprintf("%d", count)
 	variables["message"] = message
+	variables["cpu"] = nil
+
+	percentage, err := cpu.Percent(0, true)
+	if err == nil {
+		total := 0
+		for i := 0; i < len(percentage); i++ {
+			total = total + int(percentage[i])
+		}
+		variables["cpu"] = int(total / len(percentage))
+	}
 
 	js, err := json.Marshal(variables)
 	if err != nil {

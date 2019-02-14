@@ -20,6 +20,7 @@
 			    <th># of calls</th>
 			    <th>avg response time</th>
 			    <th>last response time</th>
+			    <th>cpus</th>
 			</tr>
 			<tr ng-repeat="response in responses">
 			    <td>{{response.key}}</td>
@@ -29,6 +30,7 @@
 			    <td>{{stats[response.key].count}}</td>
 			    <td>{{stats[response.key].avg}}</td>
 			    <td>{{stats[response.key].last}}</td>
+			    <td>{{response.cpu}}</td>
 			</tr>
                     </table>
 		    <p>
@@ -39,6 +41,8 @@
 		    <button type="button" data-ng-click="callService()">call service</button>    
 		    <button type="button" data-ng-click="toggleHealth()">make unhealthy</button>
 		    <button type="button" data-ng-click="stopService()">stop service</button>
+		    <button type="button" data-ng-click="increaseCpu()">increase CPU</button>
+		    <button type="button" data-ng-click="decreaseCpu()">decrease CPU</button>
 		    <button type="button"><a target="_blank" href="ui.html">explore api</a></button>
 		</div>
 	</body>

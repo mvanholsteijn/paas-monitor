@@ -46,6 +46,9 @@ paths:
               servercount:
                 description: number of times the server has been called
                 type: integer
+              cpu:
+                description: average load in percentage
+                type: integer
 
   /health:
     get:
