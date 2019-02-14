@@ -2,6 +2,7 @@ FROM 		golang:1.8
 
 WORKDIR		/
 ADD		paas-monitor.go /
+RUN		CGO_ENABLED=0 GOOS=linux go get github.com/shirou/gopsutil
 RUN		CGO_ENABLED=0 GOOS=linux go build -ldflags '-extldflags "-static"' paas-monitor.go
 RUN		curl -sS -L https://releases.hashicorp.com/envconsul/0.7.2/envconsul_0.7.2_linux_amd64.tgz | \
 			tar -xvzf -
