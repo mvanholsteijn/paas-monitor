@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -139,9 +140,48 @@ func headerHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(js)
 }
 
+
+func cpuInfoHandler(w http.ResponseWriter, r *http.Request) {
+	js, err := json.Marshal(cpus)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+}
+
 var (
 	count = 0
+	cpus  InfoStatArray
 )
+
+type InfoStatArray []cpu.InfoStat
+
+func (a InfoStatArray) Len() int {
+	return len(a)
+}
+
+func (a InfoStatArray) Less(i, j int) bool {
+	return strings.Compare(a[i].PhysicalID, a[j].PhysicalID) == -1
+}
+
+func (a InfoStatArray) Swap(i, j int) {
+	old := a[i]
+	a[i] = a[j]
+	a[j] = old
+}
+
+func getCpuInfo() {
+	var err error
+	cpus, err = cpu.Info()
+	if err != nil {
+		log.Printf("failed to get cpu info, %s", err)
+		cpus = make([]cpu.InfoStat, 0)
+	}
+	sort.Sort(cpus)
+}
 
 func statusHandler(w http.ResponseWriter, r *http.Request) {
 	variables := make(map[string]interface{})
@@ -171,6 +211,11 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 		variables["cpu"] = int(total / len(percentage))
 	}
 
+	variables["cpu_id"] = ""
+	if len(cpus) > 0  {
+		variables["cpu_id"] = cpus[0].PhysicalID
+	}
+
 	js, err := json.Marshal(variables)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -183,13 +228,13 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	var dir string
-
 	dir = os.Getenv("APPDIR")
 	if dir == "" {
 		dir = "."
 	}
 	fs := http.FileServer(http.Dir(dir + "/public"))
 
+	getCpuInfo()
 	http.Handle("/", fs)
 	http.HandleFunc("/environment", environmentHandler)
 	http.HandleFunc("/status", statusHandler)
@@ -200,6 +245,7 @@ func main() {
 	http.HandleFunc("/stop", stopHandler)
 	http.HandleFunc("/increase-cpu", increaseCpuLoadHandler)
 	http.HandleFunc("/decrease-cpu", decreaseCpuLoadHandler)
+	http.HandleFunc("/cpus", cpuInfoHandler)
 
 	portEnvName := flag.String("port-env-name", "", "the environment variable name overriding the listen port")
 	portSpecified := flag.String("port", "", "the port to listen, override the environment name")
