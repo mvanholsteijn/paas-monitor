@@ -17,7 +17,7 @@ ENV		APPDIR /app
 
 ENV		SERVICE_NAME paas-monitor
 ENV		SERVICE_TAGS http
-ENV		VERSION=${VERSION}
+ENV		RELEASE=${VERSION}
 
 ENTRYPOINT 	[ "/paas-monitor", "-port", "1337" ]
 EXPOSE 		1337
