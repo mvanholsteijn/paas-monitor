@@ -92,7 +92,7 @@ paths:
   /decrease-cpu:
     get:
       summary: decrease cpu utilization
-      operationId: increaseCpu
+      operationId: decreaseCpu
       produces:
       - plain/text
       responses:
