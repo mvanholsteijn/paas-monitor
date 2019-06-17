@@ -13,12 +13,13 @@ ARG		VERSION
 ADD 		public /app/public/
 COPY --from=0		/paas-monitor /
 COPY --from=0		/envconsul /
-ENV		APPDIR /app
 
-ENV		SERVICE_NAME paas-monitor
-ENV		SERVICE_TAGS http
-ENV		RELEASE=${VERSION}
+ENV		APPDIR /app \
+		SERVICE_NAME paas-monitor \
+		SERVICE_TAGS http \
+		PORT 1337 \
+		RELEASE=${VERSION}
 
-ENTRYPOINT 	[ "/paas-monitor", "-port", "1337" ]
+ENTRYPOINT 	["/paas-monitor"]
 EXPOSE 		1337
 HEALTHCHECK	--retries=1 --start-period=3s --interval=30s --timeout=3s CMD  ["/paas-monitor", "-check"]
