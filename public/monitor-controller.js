@@ -50,6 +50,7 @@ function MonitorController($scope, $interval, $http) {
 		    current.release = response.release;
 		    current.servercount = response.servercount;
 		    current.cpu = response.cpu;
+		    current.healthy = response.healthy;
 		}).
 		error(function(data, status, headers, config) {
 			console.log(data);

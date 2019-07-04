@@ -200,6 +200,7 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 	variables["release"] = release
 	variables["servercount"] = fmt.Sprintf("%d", count)
 	variables["message"] = message
+	variables["healthy"] = healthy
 	variables["cpu"] = nil
 
 	percentage, err := cpu.Percent(0, true)
