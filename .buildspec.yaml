@@ -11,6 +11,5 @@ phases:
         golang: 1.12
   build:
     commands:
-      - bash -xc '. ./.make-release-support ; getVersion'
       - aws ecr get-login --no-include-email | sh
-      - make snapshot
+      - make REGISTRY_HOST=${REGISTRY_HOST} snapshot
