@@ -1,9 +1,5 @@
 version: 0.2
 
-env:
-  variables:
-    AWS_DEFAULT_REGION: eu-central-1
-
 phases:
   install:
     runtime-versions:
