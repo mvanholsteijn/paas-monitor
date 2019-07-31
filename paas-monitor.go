@@ -1,11 +1,13 @@
 package main // import "github.com/mvanholsteijn/paas-monitor"
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/shirou/gopsutil/cpu"
 	"hash/crc32"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -15,6 +17,7 @@ import (
 )
 
 var port string
+var hostName string
 
 func environmentHandler(w http.ResponseWriter, r *http.Request) {
 	var variables map[string]string
@@ -140,7 +143,6 @@ func headerHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(js)
 }
 
-
 func cpuInfoHandler(w http.ResponseWriter, r *http.Request) {
 	js, err := json.Marshal(cpus)
 	if err != nil {
@@ -186,7 +188,6 @@ func getCpuInfo() {
 func statusHandler(w http.ResponseWriter, r *http.Request) {
 	variables := make(map[string]interface{})
 
-	hostName, _ := os.Hostname()
 	release := os.Getenv("RELEASE")
 	message := os.Getenv("MESSAGE")
 	if message == "" {
@@ -213,7 +214,7 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	variables["cpu_id"] = ""
-	if len(cpus) > 0  {
+	if len(cpus) > 0 {
 		variables["cpu_id"] = cpus[0].PhysicalID
 	}
 
@@ -227,6 +228,19 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(js)
 }
 
+func newUUID() (string, error) {
+	uuid := make([]byte, 16)
+	n, err := io.ReadFull(rand.Reader, uuid)
+	if n != len(uuid) || err != nil {
+		return "", err
+	}
+	// variant bits; see section 4.1.1
+	uuid[8] = uuid[8]&^0xc0 | 0x80
+	// version 4 (pseudo-random); see section 4.1.3
+	uuid[6] = uuid[6]&^0xf0 | 0x40
+	return fmt.Sprintf("%x-%x-%x-%x-%x", uuid[0:4], uuid[4:6], uuid[6:8], uuid[8:10], uuid[10:]), nil
+}
+
 func main() {
 	var dir string
 	dir = os.Getenv("APPDIR")
@@ -234,6 +248,16 @@ func main() {
 		dir = "."
 	}
 	fs := http.FileServer(http.Dir(dir + "/public"))
+
+	hostName, _ = os.Hostname()
+	if os.Getenv("K_REVISION") != "" {
+		uuid, err := newUUID()
+		if err != nil {
+			log.Fatal("failed to generate uuid, %s", err)
+		}
+		// if running in Cloud Run use a random hostName, otherwise it is localhost
+		hostName = fmt.Sprintf("%s-%s", os.Getenv("K_REVISION"), uuid)
+	}
 
 	getCpuInfo()
 	http.Handle("/", fs)
