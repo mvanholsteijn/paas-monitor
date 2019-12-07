@@ -1,7 +1,9 @@
 steps:
-  - name: 'docker'
-    entrypoint: make
-    args:
-      - REGISTRY_HOST=gcr.io
-      - USERNAME=${PROJECT_ID}
-      - snapshot
+- name: gcr.io/cloud-builders/git
+  args: ['fetch', '--unshallow', '--tags']
+- name: gcr.io/cloud-builders/docker
+  entrypoint: make
+  args:
+    - REGISTRY_HOST=gcr.io
+    - USERNAME=${PROJECT_ID}
+    - snapshot
