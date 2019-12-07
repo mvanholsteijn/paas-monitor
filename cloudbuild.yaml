@@ -1,0 +1,7 @@
+steps:
+- name: 'docker'
+  entrypoint: 
+    - make
+    - REGISTRY_HOST=gcr.io
+    - USERNAME=${PROJECT_ID}
+    - snapshot
