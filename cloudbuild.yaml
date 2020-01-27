@@ -1,9 +1,15 @@
 steps:
-- name: gcr.io/cloud-builders/git
-  args: ['fetch', '--unshallow', '--tags']
-- name: gcr.io/cloud-builders/docker
-  entrypoint: make
-  args:
-    - REGISTRY_HOST=gcr.io
-    - USERNAME=${PROJECT_ID}
-    - snapshot
+  - name: gcr.io/cloud-builders/git
+    args: ['init']
+  - name: gcr.io/cloud-builders/git
+    args: ['remote', 'add', 'origin', 'https://github.com/mvanholsteijn/paas-monitor.git']
+  - name: gcr.io/cloud-builders/git
+    args: ['fetch']
+  - name: gcr.io/cloud-builders/git
+    args: ['reset', 'origin/master']
+  - name: gcr.io/cloud-builders/docker
+    entrypoint: make
+    args:
+      - REGISTRY_HOST=gcr.io
+      - USERNAME=${PROJECT_ID}
+      - snapshot
