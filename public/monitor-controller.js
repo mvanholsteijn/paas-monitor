@@ -26,10 +26,15 @@ function MonitorController($scope, $interval, $http) {
       $scope.stopMonitor();
     });
 
+
+    function baseURL() {
+       return document.location.href.replace(/[^/]*$/, "").replace(/\/$/, "")
+    }
+
     $scope.callService = function() {
             var startTime = new Date().getTime();
 
-	    $http.get(document.location.href.replace(/[^/]*$/, "").replace(/\/$/, "") + '/status', {headers: {Connection: 'close'}})
+	    $http.get(baseURL() + '/status', {headers: {Connection: 'close'}})
 		.success(function(response) {
 		    var responseTime = new Date().getTime() - startTime;
 		    var key = response.key;
@@ -68,7 +73,7 @@ function MonitorController($scope, $interval, $http) {
    }
 
    $scope.stopService = function() {
-	    $http.get(document.location.href.replace(/\/+$/, "") + '/stop')
+	    $http.get(baseURL() + '/stop')
 		.success(function(response) {
 			console.log('a service was stopped');
 		}).
@@ -81,7 +86,7 @@ function MonitorController($scope, $interval, $http) {
    }
 
    $scope.increaseCpu = function() {
-	    $http.get(document.location.href.replace(/\/+$/, "") + '/increase-cpu')
+	    $http.get(baseURL() + '/increase-cpu')
 		.success(function(response) {
 			console.log('/increase-cpu was called');
 		}).
@@ -94,7 +99,7 @@ function MonitorController($scope, $interval, $http) {
    }
 
    $scope.decreaseCpu = function() {
-	    $http.get(document.location.href.replace(/\/+$/, "") + '/decrease-cpu')
+	    $http.get(baseURL() + '/decrease-cpu')
 		.success(function(response) {
 			console.log('/decrease-cpu was called');
 		}).
@@ -107,7 +112,7 @@ function MonitorController($scope, $interval, $http) {
    }
 
    $scope.toggleHealth = function() {
-	    $http.get(document.location.href.replace(/\/+$/, "") + '/toggle-health')
+	    $http.get(baseURL() + '/toggle-health')
 		.success(function(response) {
 			console.log('a service was made unhealthy');
 		}).
