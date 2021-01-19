@@ -16,24 +16,24 @@
 			    <th>host</th>
 			    <th>release</th>
 			    <th>message</th>
-			    <th>status</th>
 			    <th>healthy</th>
 			    <th># server calls</th>
 			    <th># of calls</th>
 			    <th>avg response time</th>
 			    <th>last response time</th>
+			    <th>last status</th>
 			    <th>cpus</th>
 			</tr>
 			<tr ng-repeat="response in responses">
 			    <td>{{response.key}}</td>
 			    <td>{{response.release}}</td>
 			    <td>{{response.message}}</td>
-			    <td>{{response.status}}</td>
 			    <td>{{response.healthy}}</td>
 			    <td>{{response.servercount}}</td>
 			    <td>{{stats[response.key].count}}</td>
 			    <td>{{stats[response.key].avg}}</td>
 			    <td>{{stats[response.key].last}}</td>
+			    <td>{{response.status}}</td>
 			    <td>{{response.cpu}}</td>
 			</tr>
                     </table>
