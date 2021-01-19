@@ -230,6 +230,9 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Connection", "close")
+	if !healthy {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}
 	w.Write(js)
 }
 
@@ -271,11 +274,11 @@ func main() {
 	flag.Parse()
 
 	getCpuInfo()
-        if noStaticContent == nil || *noStaticContent == false {
-	    http.Handle("/", fs)
-        } else {
-	    http.HandleFunc("/", notServing)
-        }
+	if noStaticContent == nil || *noStaticContent == false {
+		http.Handle("/", fs)
+	} else {
+		http.HandleFunc("/", notServing)
+	}
 	http.HandleFunc("/environment", environmentHandler)
 	http.HandleFunc("/status", statusHandler)
 	http.HandleFunc("/header", headerHandler)
@@ -286,7 +289,6 @@ func main() {
 	http.HandleFunc("/increase-cpu", increaseCpuLoadHandler)
 	http.HandleFunc("/decrease-cpu", decreaseCpuLoadHandler)
 	http.HandleFunc("/cpus", cpuInfoHandler)
-
 
 	if *portSpecified != "" && *portEnvName != "" {
 		log.Fatalf("specify either -port or -port-env-name, but not both.\n")

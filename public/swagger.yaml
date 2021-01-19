@@ -50,6 +50,7 @@ paths:
                 description: average load in percentage
                 type: integer
 
+
   /health:
     get:
       summary: check
