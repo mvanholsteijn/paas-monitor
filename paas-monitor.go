@@ -154,6 +154,11 @@ func cpuInfoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(js)
 }
 
+func notServing(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	fmt.Fprintf(w, "sorry, paas-monitor is not serving static requests.\n")
+}
+
 var (
 	count = 0
 	cpus  InfoStatArray
@@ -259,8 +264,18 @@ func main() {
 		hostName = fmt.Sprintf("%s-%s", os.Getenv("K_REVISION"), uuid)
 	}
 
+	portEnvName := flag.String("port-env-name", "", "the environment variable name overriding the listen port")
+	portSpecified := flag.String("port", "", "the port to listen, override the environment name")
+	healthCheck := flag.Bool("check", false, "check whether the service is listening")
+	noStaticContent := flag.Bool("no-static-content", false, "only, service dynamic requests")
+	flag.Parse()
+
 	getCpuInfo()
-	http.Handle("/", fs)
+        if noStaticContent == nil || *noStaticContent == false {
+	    http.Handle("/", fs)
+        } else {
+	    http.HandleFunc("/", notServing)
+        }
 	http.HandleFunc("/environment", environmentHandler)
 	http.HandleFunc("/status", statusHandler)
 	http.HandleFunc("/header", headerHandler)
@@ -272,10 +287,6 @@ func main() {
 	http.HandleFunc("/decrease-cpu", decreaseCpuLoadHandler)
 	http.HandleFunc("/cpus", cpuInfoHandler)
 
-	portEnvName := flag.String("port-env-name", "", "the environment variable name overriding the listen port")
-	portSpecified := flag.String("port", "", "the port to listen, override the environment name")
-	healthCheck := flag.Bool("check", false, "check whether the service is listening")
-	flag.Parse()
 
 	if *portSpecified != "" && *portEnvName != "" {
 		log.Fatalf("specify either -port or -port-env-name, but not both.\n")
