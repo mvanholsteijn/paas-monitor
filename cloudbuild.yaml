@@ -2,7 +2,7 @@ steps:
   - name: gcr.io/cloud-builders/git
     args: ['fetch', '--tags']
   - name: gcr.io/cloud-builders/docker
-    entrypoint: /bin/sh
+    entrypoint: /bin/bash
     args:
-      - -x -c 
-      - make REGISTRY_HOST=gcr.io USERNAME=${PROJECT_ID} snapshot
+      - -c 
+      - make -d REGISTRY_HOST=gcr.io USERNAME=${PROJECT_ID} snapshot
