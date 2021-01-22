@@ -155,8 +155,12 @@ func cpuInfoHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func notServing(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	fmt.Fprintf(w, "sorry, paas-monitor is not serving static requests.\n")
+	if r.URL.Path == "/" {
+		http.Redirect(w, r, "/index.html", http.StatusMovedPermanently)
+	} else {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		fmt.Fprintf(w, "sorry, paas-monitor is not serving static requests.\n")
+	}
 }
 
 var (
