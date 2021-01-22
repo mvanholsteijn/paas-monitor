@@ -1,10 +1,6 @@
 steps:
   - name: gcr.io/cloud-builders/git
-    args: ['init']
-  - name: gcr.io/cloud-builders/git
-    args: ['fetch']
-  - name: gcr.io/cloud-builders/git
-    args: ['reset', 'origin/master']
+    args: ['fetch', '--tags']
   - name: gcr.io/cloud-builders/docker
     entrypoint: make
     args:
