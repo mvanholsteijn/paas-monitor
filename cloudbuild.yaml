@@ -5,4 +5,4 @@ steps:
     entrypoint: /bin/bash
     args:
       - -c 
-      - git describe --long --tags --dirty --always; make REGISTRY_HOST=gcr.io USERNAME=${PROJECT_ID} snapshot
+      - git tags ; git describe --long --tags --dirty --always; make REGISTRY_HOST=gcr.io USERNAME=${PROJECT_ID} snapshot
