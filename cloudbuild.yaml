@@ -1,8 +1,13 @@
 steps:
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', '${_IMAGE}', '.']
-
-images: ['${_IMAGE}']
-
-substitutions:
-  _IMAGE: 'gcr.io/${PROJECT_ID}/${REPO_NAME}:${TAG_NAME:-${SHORT_SHA}}'
+  - name: gcr.io/cloud-builders/git
+    args: ['init']
+  - name: gcr.io/cloud-builders/git
+    args: ['fetch']
+  - name: gcr.io/cloud-builders/git
+    args: ['reset', 'origin/master']
+  - name: gcr.io/cloud-builders/docker
+    entrypoint: make
+    args:
+      - REGISTRY_HOST=gcr.io
+      - USERNAME=${PROJECT_ID}
+      - snapshot
