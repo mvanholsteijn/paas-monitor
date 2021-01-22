@@ -5,4 +5,4 @@ steps:
     entrypoint: /bin/bash
     args:
       - -c 
-      - make -d REGISTRY_HOST=gcr.io USERNAME=${PROJECT_ID} snapshot
+      - env; make REGISTRY_HOST=gcr.io USERNAME=${PROJECT_ID} snapshot

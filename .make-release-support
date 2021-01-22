@@ -1,3 +1,4 @@
+set -x
 
 
 function hasChanges() {
