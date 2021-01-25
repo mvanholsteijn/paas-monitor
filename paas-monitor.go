@@ -1,6 +1,7 @@
 package main // import "github.com/mvanholsteijn/paas-monitor"
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/json"
 	"flag"
@@ -12,8 +13,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"sort"
 	"strings"
+	"syscall"
 )
 
 var port string
@@ -117,13 +120,22 @@ func toggleHealthHandler(w http.ResponseWriter, r *http.Request) {
 
 func stopHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.Header().Set("Content-Length", "0")
-	if f, ok := w.(http.Flusher); ok {
-		f.Flush()
-	} else {
-		log.Println("Damn, no flush")
+
+	p, err := os.FindProcess(os.Getpid())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	os.Exit(1)
+	if err := p.Signal(syscall.SIGTERM); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if _, err = fmt.Fprintf(w, "signaled SIGTERM to %d", p.Pid); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	healthy = false
 }
 
 func headerHandler(w http.ResponseWriter, r *http.Request) {
@@ -259,6 +271,7 @@ func main() {
 	if dir == "" {
 		dir = "."
 	}
+
 	fs := http.FileServer(http.Dir(dir + "/public"))
 
 	hostName, _ = os.Hostname()
@@ -330,8 +343,34 @@ func main() {
 			log.Fatal(fmt.Errorf("expected status code 200, got %d", resp.StatusCode))
 		}
 	} else {
+		srv := http.Server{Addr: ":" + port}
+
+		idleConnsClosed := make(chan struct{})
+		go func() {
+			sigint := make(chan os.Signal, 1)
+
+			// interrupt signal sent from terminal
+			signal.Notify(sigint, os.Interrupt)
+			// sigterm signal sent from kubernetes
+			signal.Notify(sigint, syscall.SIGTERM)
+
+			<-sigint
+
+			// We received an interrupt signal, shut down.
+			log.Printf("received signal.")
+			if err := srv.Shutdown(context.Background()); err != nil {
+				// Error from closing listeners, or context timeout:
+				log.Printf("HTTP server shutdown failed: %v", err)
+			}
+			close(idleConnsClosed)
+		}()
+
 		log.Printf("listening on port %s\n", port)
-		err := http.ListenAndServe(":"+port, nil)
-		log.Fatal("%s", err)
+		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+			// Error starting or closing listener:
+			log.Printf("HTTP server failed, %v", err)
+		}
+
+		<-idleConnsClosed
 	}
 }
