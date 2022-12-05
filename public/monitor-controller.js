@@ -84,6 +84,7 @@ function MonitorController($scope, $interval, $http) {
                 current.servercount = response.servercount;
                 current.cpu = response.cpu;
                 current.healthy = response.healthy;
+                current.ready = response.ready;
                 current.status = status;
             } else {
                 console.log("failed to find " + response.key);
@@ -148,6 +149,19 @@ function MonitorController($scope, $interval, $http) {
         $http.get(baseURL() + '/toggle-health')
             .success(function(response) {
                 console.log('a service was made unhealthy');
+            }).
+        error(function(data, status, headers, config) {
+            console.log(data);
+            console.log(status);
+            console.log(headers);
+            console.log(config);
+        });
+    }
+
+    $scope.toggleReady = function() {
+        $http.get(baseURL() + '/toggle-ready')
+            .success(function(response) {
+                console.log('a service was made not-ready');
             }).
         error(function(data, status, headers, config) {
             console.log(data);

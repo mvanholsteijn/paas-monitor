@@ -62,7 +62,7 @@ paths:
           description: ok
           schema:
             type: string
-        500:
+        503:
           description: ok
           schema:
             type: string
@@ -70,7 +70,7 @@ paths:
 
   /toggle-health:
     get:
-      summary: toggle the servers' health state
+      summary: toggle the server's health state
       operationId: toggleHealth
       produces:
       - plain/text
@@ -79,6 +79,36 @@ paths:
           description: ok
           schema:
             type: string
+
+  /ready:
+    get:
+      summary: check
+      operationId: getReady
+      produces:
+      - plain/text
+      responses:
+        200:
+          description: ok
+          schema:
+            type: string
+        503:
+          description: ok
+          schema:
+            type: string
+            description: server toggled to be not ready
+
+  /toggle-ready:
+    get:
+      summary: toggle the server's ready state
+      operationId: toggleReady
+      produces:
+      - plain/text
+      responses:
+        200:
+          description: ok
+          schema:
+            type: string
+
   /increase-cpu:
     get:
       summary: increase cpu utilization
@@ -90,6 +120,7 @@ paths:
           description: ok
           schema:
             type: string
+
   /decrease-cpu:
     get:
       summary: decrease cpu utilization
@@ -124,6 +155,7 @@ paths:
           description: ok
           schema:
             type: object
+
   /request:
     get:
       summary: as understood by the HTTP server

@@ -17,6 +17,7 @@
 			    <th>release</th>
 			    <th>message</th>
 			    <th>healthy</th>
+			    <th>ready</th>
 			    <th># server calls</th>
 			    <th># of calls</th>
 			    <th>avg response time</th>
@@ -29,6 +30,7 @@
 			    <td>{{response.release}}</td>
 			    <td>{{response.message}}</td>
 			    <td>{{response.healthy}}</td>
+			    <td>{{response.ready}}</td>
 			    <td>{{response.servercount}}</td>
 			    <td>{{stats[response.key].count}}</td>
 			    <td>{{stats[response.key].avg}}</td>
@@ -44,6 +46,7 @@
 		    <button type="button" data-ng-click="stopMonitor()">stop monitor</button>    
 		    <button type="button" data-ng-click="callService()">call service</button>    
 		    <button type="button" data-ng-click="toggleHealth()">toggle health</button>
+		    <button type="button" data-ng-click="toggleReady()">toggle ready</button>
 		    <button type="button" data-ng-click="stopService()">stop service</button>
 		    <button type="button" data-ng-click="increaseCpu()">increase CPU</button>
 		    <button type="button" data-ng-click="decreaseCpu()">decrease CPU</button>

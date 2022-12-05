@@ -85,6 +85,18 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+var ready = true
+
+func readyHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	if ready {
+		fmt.Fprintf(w, "service is ready")
+	} else {
+		http.Error(w, "service is not ready", http.StatusServiceUnavailable)
+	}
+}
+
+
 var quitLoad = make(chan bool, 1)
 
 func burnCPU() {
@@ -118,9 +130,15 @@ func toggleHealthHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "toggled health to %v", healthy)
 }
 
+func toggleReadyHandler(w http.ResponseWriter, r *http.Request) {
+	ready = !ready
+	fmt.Fprintf(w, "toggled ready to %v", ready)
+}
+
 func stopHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
+	ready = false
 	p, err := os.FindProcess(os.Getpid())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -223,6 +241,7 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 	variables["servercount"] = fmt.Sprintf("%d", count)
 	variables["message"] = message
 	variables["healthy"] = healthy
+	variables["ready"] = ready
 	variables["cpu"] = nil
 
 	percentage, err := cpu.Percent(0, true)
@@ -300,7 +319,9 @@ func main() {
 	http.HandleFunc("/status", statusHandler)
 	http.HandleFunc("/header", headerHandler)
 	http.HandleFunc("/health", healthHandler)
+	http.HandleFunc("/ready", readyHandler)
 	http.HandleFunc("/toggle-health", toggleHealthHandler)
+	http.HandleFunc("/toggle-ready", toggleReadyHandler)
 	http.HandleFunc("/request", requestHandler)
 	http.HandleFunc("/stop", stopHandler)
 	http.HandleFunc("/increase-cpu", increaseCpuLoadHandler)
