@@ -1,0 +1,54 @@
+#cloud-config
+users:
+  - name: paas-monitor
+    groups: docker
+
+runcmd:
+  - systemctl daemon-reload
+  - systemctl start paas-monitor.service
+
+write_files:
+  - path: /etc/systemd/system/paas-monitor.service
+    permissions: '0644'
+    owner: root
+    content: |
+      [Unit]
+      Description=The paas-monitor
+
+      [Service]
+      Type=simple
+
+      User=paas-monitor
+      Group=paas-monitor
+
+      ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
+      ExecStop=/usr/bin/docker stop paas-monitor
+
+      ExecStart=/usr/bin/docker run \
+        --rm \
+        --name paas-monitor \
+        --publish 80:80 \
+        gcr.io/binx-io-public/paas-monitor:3.4.0 \
+        --port 80
+
+
+      Restart=always
+      SuccessExitStatus=0 SIGTERM
+
+      [Install]
+      WantedBy=multi-user.target
+      BindsTo=firewall-config.service
+
+  - path: /etc/systemd/system/firewall-config.service
+    permissions: 0644
+    owner: root
+    content: |
+      [Unit]
+      Description=Configures the host firewall
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=true
+      ExecStart=/sbin/iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+      ExecStop=/sbin/iptables -A INPUT -p tcp --dport 80 -j DROP
+
