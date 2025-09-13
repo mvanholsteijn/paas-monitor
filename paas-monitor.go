@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/shirou/gopsutil/cpu"
 	"hash/crc32"
 	"io"
 	"io/ioutil"
@@ -17,10 +16,18 @@ import (
 	"sort"
 	"strings"
 	"syscall"
+	"time"
+
+	"github.com/michaelquigley/pfxlog"
+	"github.com/openziti/sdk-golang/ziti"
+	"github.com/shirou/gopsutil/cpu"
+	"github.com/sirupsen/logrus"
 )
 
-var port string
-var hostName string
+var (
+	port     string
+	hostName string
+)
 
 func environmentHandler(w http.ResponseWriter, r *http.Request) {
 	var variables map[string]string
@@ -53,7 +60,6 @@ func environmentHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
-
 	var variables map[string]string
 
 	variables = make(map[string]string)
@@ -95,7 +101,6 @@ func readyHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "service is not ready", http.StatusServiceUnavailable)
 	}
 }
-
 
 var quitLoad = make(chan bool, 1)
 
@@ -157,7 +162,6 @@ func stopHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func headerHandler(w http.ResponseWriter, r *http.Request) {
-
 	hdr := r.Header
 	hdr["Host"] = []string{r.Host}
 	hdr["Content-Type"] = []string{r.Header.Get("Content-Type")}
@@ -284,6 +288,32 @@ func newUUID() (string, error) {
 	return fmt.Sprintf("%x-%x-%x-%x-%x", uuid[0:4], uuid[4:6], uuid[6:8], uuid[8:10], uuid[10:]), nil
 }
 
+// newPAASMonitorHandler creates an http.Handler with all routes registered.
+func newPAASMonitorHandler(fs http.Handler, noStaticContent bool) http.Handler {
+	mux := http.NewServeMux()
+
+	if !noStaticContent {
+		mux.Handle("/", fs)
+	} else {
+		mux.HandleFunc("/", notServing)
+	}
+
+	mux.HandleFunc("/environment", environmentHandler)
+	mux.HandleFunc("/status", statusHandler)
+	mux.HandleFunc("/header", headerHandler)
+	mux.HandleFunc("/health", healthHandler)
+	mux.HandleFunc("/ready", readyHandler)
+	mux.HandleFunc("/toggle-health", toggleHealthHandler)
+	mux.HandleFunc("/toggle-ready", toggleReadyHandler)
+	mux.HandleFunc("/request", requestHandler)
+	mux.HandleFunc("/stop", stopHandler)
+	mux.HandleFunc("/increase-cpu", increaseCpuLoadHandler)
+	mux.HandleFunc("/decrease-cpu", decreaseCpuLoadHandler)
+	mux.HandleFunc("/cpus", cpuInfoHandler)
+
+	return mux
+}
+
 func main() {
 	var dir string
 	dir = os.Getenv("APPDIR")
@@ -307,30 +337,13 @@ func main() {
 	portSpecified := flag.String("port", "", "the port to listen, override the environment name")
 	healthCheck := flag.Bool("check", false, "check whether the service is listening")
 	noStaticContent := flag.Bool("no-static-content", false, "only, service dynamic requests")
+	zitiServerConfiguration := flag.String("ziti-server-configuration", "", "the ziti server configuration file")
 	flag.Parse()
 
 	getCpuInfo()
-	if noStaticContent == nil || *noStaticContent == false {
-		http.Handle("/", fs)
-	} else {
-		http.HandleFunc("/", notServing)
-	}
-	http.HandleFunc("/environment", environmentHandler)
-	http.HandleFunc("/status", statusHandler)
-	http.HandleFunc("/header", headerHandler)
-	http.HandleFunc("/health", healthHandler)
-	http.HandleFunc("/ready", readyHandler)
-	http.HandleFunc("/toggle-health", toggleHealthHandler)
-	http.HandleFunc("/toggle-ready", toggleReadyHandler)
-	http.HandleFunc("/request", requestHandler)
-	http.HandleFunc("/stop", stopHandler)
-	http.HandleFunc("/increase-cpu", increaseCpuLoadHandler)
-	http.HandleFunc("/decrease-cpu", decreaseCpuLoadHandler)
-	http.HandleFunc("/cpus", cpuInfoHandler)
 
-	if *portSpecified != "" && *portEnvName != "" {
-		log.Fatalf("specify either -port or -port-env-name, but not both.\n")
-	}
+	// Build a handler and mount it at "/" so it works with the default mux as well.
+	handler := newPAASMonitorHandler(fs, noStaticContent != nil && *noStaticContent)
 
 	if *portSpecified != "" {
 		port = *portSpecified
@@ -348,6 +361,9 @@ func main() {
 		}
 	}
 
+	if zitiServerConfiguration != nil && *zitiServerConfiguration != "" {
+		os.Exit(zitifiedServer(*zitiServerConfiguration, handler))
+	}
 	if *healthCheck {
 		resp, err := http.Get("http://0.0.0.0:" + port + "/health")
 		if err != nil {
@@ -364,7 +380,10 @@ func main() {
 			log.Fatal(fmt.Errorf("expected status code 200, got %d", resp.StatusCode))
 		}
 	} else {
-		srv := http.Server{Addr: ":" + port}
+		srv := http.Server{
+			Addr:    ":" + port,
+			Handler: handler, // use our handler
+		}
 
 		idleConnsClosed := make(chan struct{})
 		go func() {
@@ -394,4 +413,39 @@ func main() {
 
 		<-idleConnsClosed
 	}
+}
+
+func zitifiedServer(configurationFile string, handler http.Handler) int {
+
+	if os.Getenv("DEBUG") == "true" {
+		pfxlog.GlobalInit(logrus.DebugLevel, pfxlog.DefaultOptions())
+		pfxlog.Logger().Debugf("debug enabled")
+	}
+
+	cfg, err := ziti.NewConfigFromFile(configurationFile)
+	if err != nil {
+		panic(err)
+	}
+
+	ctx, err := ziti.NewContext(cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	serviceName := "paas-monitor"
+	listener, err := ctx.ListenWithOptions(serviceName, &ziti.ListenOptions{
+		ConnectTimeout: 5 * time.Minute,
+		MaxTerminators: 3,
+	})
+	if err != nil {
+		fmt.Printf("Error binding service %+v\n", err)
+		panic(err)
+	}
+
+	fmt.Printf("listening for requests for Ziti service %v\n", serviceName)
+	if err = http.Serve(listener, handler); err != nil {
+		fmt.Sprintf("ziti stopped serving %s", err)
+		return 1
+	}
+	return 0
 }
