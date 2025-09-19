@@ -339,7 +339,7 @@ func main() {
 	portSpecified := flag.String("port", "", "the port to listen, override the environment name")
 	healthCheck := flag.Bool("check", false, "check whether the service is listening")
 	noStaticContent := flag.Bool("no-static-content", false, "only, service dynamic requests")
-	zitiServerConfiguration := flag.String("ziti-server-configuration", "", "the ziti server configuration file")
+	zitiServerConfiguration := flag.String("ziti-server-configuration", "", "a file or google secret manager gsm:///projects/<>/secrets/<>/versions/latest")
 	flag.Parse()
 
 	getCpuInfo()
@@ -363,9 +363,6 @@ func main() {
 		}
 	}
 
-	if zitiServerConfiguration != nil && *zitiServerConfiguration != "" {
-		os.Exit(zitifiedServer(*zitiServerConfiguration, handler))
-	}
 	if *healthCheck {
 		resp, err := http.Get("http://0.0.0.0:" + port + "/health")
 		if err != nil {
@@ -381,6 +378,10 @@ func main() {
 			}
 			log.Fatal(fmt.Errorf("expected status code 200, got %d", resp.StatusCode))
 		}
+	}
+
+	if zitiServerConfiguration != nil && *zitiServerConfiguration != "" {
+		os.Exit(zitifiedServer(*zitiServerConfiguration, handler))
 	} else {
 		srv := http.Server{
 			Addr:    ":" + port,
@@ -460,8 +461,8 @@ func zitifiedServer(configurationFile string, handler http.Handler) int {
 	}
 
 	var cfg *ziti.Config
-	if strings.HasPrefix(configurationFile, "gsm:") {
-		secretName := strings.TrimPrefix(configurationFile, "gsm:")
+	if strings.HasPrefix(configurationFile, "gsm:///") {
+		secretName := strings.TrimPrefix(configurationFile, "gsm:///")
 		secret, err := getSecret(secretName)
 		if err != nil {
 			log.Fatal(err)
@@ -484,20 +485,81 @@ func zitifiedServer(configurationFile string, handler http.Handler) int {
 		log.Fatal(err)
 	}
 
-	serviceName := "paas-monitor"
-	listener, err := ctx.ListenWithOptions(serviceName, &ziti.ListenOptions{
-		ConnectTimeout: 5 * time.Minute,
-		MaxTerminators: 3,
-	})
+	sigint := make(chan os.Signal, 1)
+	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(sigint, os.Interrupt, syscall.SIGINT)
+
+	healthMux := http.NewServeMux()
+	healthMux.HandleFunc("/health", healthHandler)
+
+	healthSrv := &http.Server{
+		Addr:    ":1337",
+		Handler: healthMux,
+	}
+
+	zitiSrv := &http.Server{Handler: handler}
 	if err != nil {
 		fmt.Printf("Error binding service %+v\n", err)
 		log.Fatal(err)
 	}
 
-	fmt.Printf("listening for requests for Ziti service %v\n", serviceName)
-	if err = http.Serve(listener, handler); err != nil {
-		fmt.Sprintf("ziti stopped serving %s", err)
-		return 1
+	go func() {
+		log.Printf("starting health check server on port 1337")
+		if err := healthSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Printf("health check server failed: %v", err)
+		}
+	}()
+
+	done := make(chan bool)
+
+	go func() {
+		defer close(done)
+		serviceName := "paas-monitor"
+		fmt.Printf("listening for requests for Ziti service %v\n", serviceName)
+		zitiListener, err := ctx.ListenWithOptions(serviceName, &ziti.ListenOptions{
+			ConnectTimeout: 5 * time.Minute,
+			MaxTerminators: 3,
+		})
+		if err != nil {
+			log.Printf("failed to listen for Ziti service %v: %v", serviceName, err)
+			return
+		}
+		if err = zitiSrv.Serve(zitiListener); err != nil {
+			log.Printf("ziti stopped serving %s", err)
+		}
+	}()
+
+	select {
+	case <-sigint:
+		log.Printf("received signal, shutting down servers...")
+
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer shutdownCancel()
+
+		if err := healthSrv.Shutdown(shutdownCtx); err != nil {
+			log.Printf("health server shutdown failed: %v", err)
+		}
+
+		if err := zitiSrv.Shutdown(shutdownCtx); err != nil {
+			log.Printf("ziti server shutdown failed: %v", err)
+		}
+		select {
+		case <-done:
+			log.Printf("servers shut down gracefully")
+		case <-shutdownCtx.Done():
+			log.Printf("servers failed to shutdown in 30s")
+			return 1
+		}
+
+	case <-done:
+		log.Printf("ziti server stopped")
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer shutdownCancel()
+
+		if err := healthSrv.Shutdown(shutdownCtx); err != nil {
+			log.Printf("health server shutdown failed: %v", err)
+		}
 	}
+
 	return 0
 }

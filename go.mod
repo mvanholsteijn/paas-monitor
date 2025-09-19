@@ -4,7 +4,8 @@ go 1.24.3
 
 require (
 	cloud.google.com/go/secretmanager v1.15.0
-	github.com/michaelquigley/pfxlog v1.0.0
+	github.com/michaelquigley/pfxlog v0.6.10
+	github.com/openziti/channel/v4 v4.2.31
 	github.com/openziti/sdk-golang v1.2.4
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/sirupsen/logrus v1.9.3
@@ -57,7 +58,6 @@ require (
 	github.com/muhlemmer/gu v0.3.1 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
-	github.com/openziti/channel/v4 v4.2.31 // indirect
 	github.com/openziti/edge-api v0.26.47 // indirect
 	github.com/openziti/foundation/v2 v2.0.73 // indirect
 	github.com/openziti/identity v1.0.112 // indirect
