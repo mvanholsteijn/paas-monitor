@@ -18,6 +18,8 @@ import (
 	"syscall"
 	"time"
 
+	"cloud.google.com/go/secretmanager/apiv1"
+	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	"github.com/michaelquigley/pfxlog"
 	"github.com/openziti/sdk-golang/ziti"
 	"github.com/shirou/gopsutil/cpu"
@@ -415,6 +417,41 @@ func main() {
 	}
 }
 
+func getSecret(name string) ([]byte, error) {
+	ctx := context.Background()
+
+	client, err := secretmanager.NewClient(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("secretmanager.NewClient: %w", err)
+	}
+
+	defer func(client *secretmanager.Client) {
+		err := client.Close()
+		if err != nil {
+
+		}
+	}(client)
+
+	response, err := client.AccessSecretVersion(ctx, &secretmanagerpb.AccessSecretVersionRequest{
+		Name: name,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("access secret %q: %w", name, err)
+	}
+	if response.Payload == nil {
+		return nil, fmt.Errorf("secret %q has empty payload", name)
+	}
+	data := response.Payload.Data
+	if response.Payload.DataCrc32C != nil {
+		sum := crc32.Checksum(data, crc32.MakeTable(crc32.Castagnoli))
+		if sum != uint32(*response.Payload.DataCrc32C) {
+			return nil, fmt.Errorf("secret payload checksum mismatch (possible data corruption)")
+		}
+	}
+
+	return data, nil
+}
+
 func zitifiedServer(configurationFile string, handler http.Handler) int {
 
 	if os.Getenv("DEBUG") == "true" {
@@ -422,14 +459,29 @@ func zitifiedServer(configurationFile string, handler http.Handler) int {
 		pfxlog.Logger().Debugf("debug enabled")
 	}
 
-	cfg, err := ziti.NewConfigFromFile(configurationFile)
-	if err != nil {
-		panic(err)
+	var cfg *ziti.Config
+	if strings.HasPrefix(configurationFile, "gsm:") {
+		secretName := strings.TrimPrefix(configurationFile, "gsm:")
+		secret, err := getSecret(secretName)
+		if err != nil {
+			log.Fatal(err)
+		}
+		cfg = &ziti.Config{}
+		err = json.Unmarshal(secret, cfg)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		var err error
+		cfg, err = ziti.NewConfigFromFile(configurationFile)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	ctx, err := ziti.NewContext(cfg)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	serviceName := "paas-monitor"
@@ -439,7 +491,7 @@ func zitifiedServer(configurationFile string, handler http.Handler) int {
 	})
 	if err != nil {
 		fmt.Printf("Error binding service %+v\n", err)
-		panic(err)
+		log.Fatal(err)
 	}
 
 	fmt.Printf("listening for requests for Ziti service %v\n", serviceName)
