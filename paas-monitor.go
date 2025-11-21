@@ -98,7 +98,10 @@ var ready = true
 func readyHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	if ready {
-		fmt.Fprintf(w, "service is ready")
+		_, err := fmt.Fprint(w, "service is ready")
+		if err != nil {
+			log.Printf("failed to write to response, %s", err)
+		}
 	} else {
 		http.Error(w, "service is not ready", http.StatusServiceUnavailable)
 	}
@@ -116,30 +119,43 @@ func burnCPU() {
 	}
 }
 
-func increaseCpuLoadHandler(w http.ResponseWriter, r *http.Request) {
+func increaseCPULoadHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	go burnCPU()
-	fmt.Fprintf(w, "CPU load increased\n")
+	_, err := fmt.Fprint(w, "CPU load increased\n")
+	if err != nil {
+		log.Printf("failed to write to response, %s", err)
+	}
 }
 
-func decreaseCpuLoadHandler(w http.ResponseWriter, r *http.Request) {
+func decreaseCPULoadHandler(w http.ResponseWriter, r *http.Request) {
+	var err error
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	select {
 	case quitLoad <- true:
-		fmt.Fprintf(w, "CPU load decreased\n")
+		_, err = fmt.Fprint(w, "CPU load decreased\n")
 	default:
-		fmt.Fprintf(w, "no additional CPU load decreased\n")
+		_, err = fmt.Fprint(w, "no additional CPU load decreased\n")
+	}
+	if err != nil {
+		log.Printf("failed to write to response, %s", err)
 	}
 }
 
 func toggleHealthHandler(w http.ResponseWriter, r *http.Request) {
 	healthy = !healthy
-	fmt.Fprintf(w, "toggled health to %v", healthy)
+	_, err := fmt.Fprintf(w, "toggled health to %v", healthy)
+	if err != nil {
+		log.Printf("failed to write to response, %s", err)
+	}
 }
 
 func toggleReadyHandler(w http.ResponseWriter, r *http.Request) {
 	ready = !ready
-	fmt.Fprintf(w, "toggled ready to %v", ready)
+	_, err := fmt.Fprintf(w, "toggled ready to %v", ready)
+	if err != nil {
+		log.Printf("failed to write to response, %s", err)
+	}
 }
 
 func stopHandler(w http.ResponseWriter, r *http.Request) {
@@ -157,6 +173,7 @@ func stopHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err = fmt.Fprintf(w, "signaled SIGTERM to %d", p.Pid); err != nil {
+		log.Printf("failed to write to response, %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -195,32 +212,35 @@ func notServing(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/index.html", http.StatusMovedPermanently)
 	} else {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		fmt.Fprintf(w, "sorry, paas-monitor is not serving static requests.\n")
+		_, err := fmt.Fprint(w, "sorry, paas-monitor is not serving static requests.\n")
+		if err != nil {
+			log.Printf("failed to write to response, %s", err)
+		}
 	}
 }
 
 var (
 	count = 0
-	cpus  InfoStatArray
+	cpus  cpuInfos
 )
 
-type InfoStatArray []cpu.InfoStat
+type cpuInfos []cpu.InfoStat
 
-func (a InfoStatArray) Len() int {
+func (a cpuInfos) Len() int {
 	return len(a)
 }
 
-func (a InfoStatArray) Less(i, j int) bool {
+func (a cpuInfos) Less(i, j int) bool {
 	return strings.Compare(a[i].PhysicalID, a[j].PhysicalID) == -1
 }
 
-func (a InfoStatArray) Swap(i, j int) {
+func (a cpuInfos) Swap(i, j int) {
 	old := a[i]
 	a[i] = a[j]
 	a[j] = old
 }
 
-func getCpuInfo() {
+func getCPUInfo() {
 	var err error
 	cpus, err = cpu.Info()
 	if err != nil {
@@ -230,51 +250,60 @@ func getCpuInfo() {
 	sort.Sort(cpus)
 }
 
-func statusHandler(w http.ResponseWriter, r *http.Request) {
-	variables := make(map[string]interface{})
+func createStatusHandler(keepConnection bool) func(w http.ResponseWriter, r *http.Request) {
 
-	release := os.Getenv("RELEASE")
-	message := os.Getenv("MESSAGE")
-	if message == "" {
-		message = "Hello World"
-	} else {
-		message = os.ExpandEnv(message)
-	}
-	count = count + 1
+	statusHandler := func(w http.ResponseWriter, r *http.Request) {
+		variables := make(map[string]interface{})
 
-	variables["key"] = fmt.Sprintf("%s:%s", hostName, port)
-	variables["release"] = release
-	variables["servercount"] = fmt.Sprintf("%d", count)
-	variables["message"] = message
-	variables["healthy"] = healthy
-	variables["ready"] = ready
-	variables["cpu"] = nil
-
-	percentage, err := cpu.Percent(0, true)
-	if err == nil {
-		total := 0
-		for i := 0; i < len(percentage); i++ {
-			total = total + int(percentage[i])
+		release := os.Getenv("RELEASE")
+		message := os.Getenv("MESSAGE")
+		if message == "" {
+			message = "Hello World"
+		} else {
+			message = os.ExpandEnv(message)
 		}
-		variables["cpu"] = int(total / len(percentage))
+		count = count + 1
+
+		variables["key"] = fmt.Sprintf("%s:%s", hostName, port)
+		variables["release"] = release
+		variables["servercount"] = fmt.Sprintf("%d", count)
+		variables["message"] = message
+		variables["healthy"] = healthy
+		variables["ready"] = ready
+		variables["cpu"] = nil
+
+		percentage, err := cpu.Percent(0, true)
+		if err == nil {
+			total := 0
+			for i := 0; i < len(percentage); i++ {
+				total = total + int(percentage[i])
+			}
+			variables["cpu"] = int(total / len(percentage))
+		}
+
+		variables["cpu_id"] = ""
+		if len(cpus) > 0 {
+			variables["cpu_id"] = cpus[0].PhysicalID
+		}
+
+		js, err := json.Marshal(variables)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if !keepConnection {
+			w.Header().Set("Connection", "close")
+		}
+		if !healthy {
+			w.WriteHeader(http.StatusServiceUnavailable)
+		}
+		if _, err = w.Write(js); err != nil {
+			log.Printf("failed to write to response, %s", err)
+		}
 	}
 
-	variables["cpu_id"] = ""
-	if len(cpus) > 0 {
-		variables["cpu_id"] = cpus[0].PhysicalID
-	}
-
-	js, err := json.Marshal(variables)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Connection", "close")
-	if !healthy {
-		w.WriteHeader(http.StatusServiceUnavailable)
-	}
-	w.Write(js)
+	return statusHandler
 }
 
 func newUUID() (string, error) {
@@ -291,7 +320,7 @@ func newUUID() (string, error) {
 }
 
 // newPAASMonitorHandler creates an http.Handler with all routes registered.
-func newPAASMonitorHandler(fs http.Handler, noStaticContent bool) http.Handler {
+func newPAASMonitorHandler(fs http.Handler, noStaticContent bool, keepConnection bool) http.Handler {
 	mux := http.NewServeMux()
 
 	if !noStaticContent {
@@ -301,7 +330,7 @@ func newPAASMonitorHandler(fs http.Handler, noStaticContent bool) http.Handler {
 	}
 
 	mux.HandleFunc("/environment", environmentHandler)
-	mux.HandleFunc("/status", statusHandler)
+	mux.HandleFunc("/status", createStatusHandler(keepConnection))
 	mux.HandleFunc("/header", headerHandler)
 	mux.HandleFunc("/health", healthHandler)
 	mux.HandleFunc("/ready", readyHandler)
@@ -309,8 +338,8 @@ func newPAASMonitorHandler(fs http.Handler, noStaticContent bool) http.Handler {
 	mux.HandleFunc("/toggle-ready", toggleReadyHandler)
 	mux.HandleFunc("/request", requestHandler)
 	mux.HandleFunc("/stop", stopHandler)
-	mux.HandleFunc("/increase-cpu", increaseCpuLoadHandler)
-	mux.HandleFunc("/decrease-cpu", decreaseCpuLoadHandler)
+	mux.HandleFunc("/increase-cpu", increaseCPULoadHandler)
+	mux.HandleFunc("/decrease-cpu", decreaseCPULoadHandler)
 	mux.HandleFunc("/cpus", cpuInfoHandler)
 
 	return mux
@@ -329,7 +358,7 @@ func main() {
 	if os.Getenv("K_REVISION") != "" {
 		uuid, err := newUUID()
 		if err != nil {
-			log.Fatal("failed to generate uuid, %s", err)
+			log.Fatalf("failed to generate uuid, %s", err)
 		}
 		// if running in Cloud Run use a random hostName, otherwise it is localhost
 		hostName = fmt.Sprintf("%s-%s", os.Getenv("K_REVISION"), uuid)
@@ -338,14 +367,15 @@ func main() {
 	portEnvName := flag.String("port-env-name", "", "the environment variable name overriding the listen port")
 	portSpecified := flag.String("port", "", "the port to listen, override the environment name")
 	healthCheck := flag.Bool("check", false, "check whether the service is listening")
+	keepConnection := flag.Bool("keep-connection", false, "do not add connection close header on each response")
 	noStaticContent := flag.Bool("no-static-content", false, "only, service dynamic requests")
 	zitiServerConfiguration := flag.String("ziti-server-configuration", "", "a file or google secret manager gsm:///projects/<>/secrets/<>/versions/latest")
 	flag.Parse()
 
-	getCpuInfo()
+	getCPUInfo()
 
 	// Build a handler and mount it at "/" so it works with the default mux as well.
-	handler := newPAASMonitorHandler(fs, noStaticContent != nil && *noStaticContent)
+	handler := newPAASMonitorHandler(fs, noStaticContent != nil && *noStaticContent, *keepConnection)
 
 	if *portSpecified != "" {
 		port = *portSpecified
@@ -366,7 +396,7 @@ func main() {
 	if *healthCheck {
 		resp, err := http.Get("http://0.0.0.0:" + port + "/health")
 		if err != nil {
-			log.Fatal(fmt.Errorf("%s", err))
+			log.Fatal(err)
 		}
 		if resp.StatusCode == 200 {
 			os.Exit(0)
@@ -374,7 +404,7 @@ func main() {
 			defer resp.Body.Close()
 			body, err := ioutil.ReadAll(resp.Body)
 			if err == nil {
-				fmt.Printf("%s\n", body)
+				log.Printf("%s\n", body)
 			}
 			log.Fatal(fmt.Errorf("expected status code 200, got %d", resp.StatusCode))
 		}
@@ -499,7 +529,7 @@ func zitifiedServer(configurationFile string, handler http.Handler) int {
 
 	zitiSrv := &http.Server{Handler: handler}
 	if err != nil {
-		fmt.Printf("Error binding service %+v\n", err)
+		log.Printf("Error binding service %+v\n", err)
 		log.Fatal(err)
 	}
 
@@ -515,7 +545,7 @@ func zitifiedServer(configurationFile string, handler http.Handler) int {
 	go func() {
 		defer close(done)
 		serviceName := "paas-monitor"
-		fmt.Printf("listening for requests for Ziti service %v\n", serviceName)
+		log.Printf("listening for requests for Ziti service %v\n", serviceName)
 		zitiListener, err := ctx.ListenWithOptions(serviceName, &ziti.ListenOptions{
 			ConnectTimeout: 5 * time.Minute,
 			MaxTerminators: 3,
